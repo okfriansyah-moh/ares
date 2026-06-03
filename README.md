@@ -1,8 +1,10 @@
-![ARES AI Repository Standard](./ares-infographic.png)
+![ARES AI Repository Standard](assets/ares-infographic.png)
 
-# ARES — AI Repository Standard
+# ARES
 
-A provider-agnostic standard for AI-assisted development repositories.
+## AI Repository Standard
+
+Provider-agnostic repository standard for AI-assisted software development.
 
 Define repository knowledge once in `.ai/`, then generate provider-specific conventions for Cursor, GitHub Copilot, Claude, Codex, and future tools.
 
