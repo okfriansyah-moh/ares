@@ -203,7 +203,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 1 — Project Scaffold
+### Task 1 — Project Scaffold ✅
 
 **Goal:** Initialise the Go module, establish the full directory structure, write the Makefile, `.gitignore`, and verify the workspace compiles with no source files present.
 
@@ -238,7 +238,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 2 — Domain Types (`pkg/arslib`)
+### Task 2 — Domain Types (`pkg/arslib`) ✅
 
 **Goal:** Define all public domain types shared across packages — the in-memory representation of a `.ai/` directory and the three core interfaces. These types are the single source of truth; no other package defines its own copy.
 
@@ -284,7 +284,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 3 — Config Package (`internal/config`)
+### Task 3 — Config Package (`internal/config`) ✅
 
 **Goal:** Parse and validate `manifest.yaml` into the `arslib.Manifest` type. Return typed errors that callers can distinguish (missing file vs. parse error vs. validation error).
 
@@ -321,7 +321,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 4 — Markdown Section Utility (`internal/markdown`)
+### Task 4 — Markdown Section Utility (`internal/markdown`) ✅
 
 **Goal:** Shared utility that extracts named sections from a Markdown file using goldmark's AST. Used by both `validator` (checking required headings) and `importer` (extracting content by heading). Zero domain knowledge — operates on raw text only.
 
@@ -361,7 +361,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 5 — Scaffold Package (`ars init`)
+### Task 5 — Scaffold Package (`ars init`) ✅
 
 **Goal:** Implement `ars init` — write a valid `.ai/` skeleton from embedded templates into the repository root. Abort if `.ai/` already exists unless `--force` is passed.
 
@@ -405,7 +405,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 6 — Validator (`ars validate`)
+### Task 6 — Validator (`ars validate`) ✅
 
 **Goal:** Implement `ars validate` — report all structural errors in a `.ai/` directory with file path, level, and message. Exit code 0 if no Errors; exit code 1 if any Error.
 
@@ -455,7 +455,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 7 — Compose Infrastructure + Cursor Target
+### Task 7 — Compose Infrastructure + Cursor Target ✅
 
 **Goal:** Define the `Composer` interface, the global compose registry, and implement the first provider target (`cursor`). The registry pattern ensures `ars compose` can dispatch to any target without a switch statement in the caller.
 
@@ -506,7 +506,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 8 — Copilot Composer
+### Task 8 — Copilot Composer ✅
 
 **Goal:** Implement the `copilot` compose target — produce `.github/copilot-instructions.md` from `.ai/`.
 
@@ -551,7 +551,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 9 — Claude + Codex Composers
+### Task 9 — Claude + Codex Composers ✅
 
 **Goal:** Implement the `claude` and `codex` compose targets. Both are single-file outputs similar to `copilot`; they are batched into one task because their structures differ only in output filename and minor formatting conventions.
 
@@ -599,7 +599,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 10 — Importer Infrastructure + GitHub Source
+### Task 10 — Importer Infrastructure + GitHub Source ✅
 
 **Goal:** Define the `Importer` interface, the global import registry, and implement the first import source (`github` — reads `.github/copilot-instructions.md`). The import flow is the inverse of compose: parse a provider file, infer `.ai/` structure, write it out.
 
@@ -1078,16 +1078,16 @@ After installation the user sees:
 
 | Task | Name | Key Files | Depends On | Est. Complexity |
 |---|---|---|---|---|
-| 1 | Project Scaffold | `go.mod`, `Makefile`, `.gitignore`, `cmd/ars/main.go` stub | — | Low |
-| 2 | Domain Types | `pkg/arslib/types.go`, `interfaces.go`, `types_test.go` | Task 1 | Low |
-| 3 | Config Package | `internal/config/manifest.go`, `types.go`, `manifest_test.go` | Task 2 | Low |
-| 4 | Markdown Utility | `internal/markdown/markdown.go`, `markdown_test.go` | Task 1 | Medium |
-| 5 | Scaffold (`ars init`) | `internal/scaffold/scaffold.go`, `templates/`, `scaffold_test.go` | Tasks 2, 3 | Medium |
-| 6 | Validator (`ars validate`) | `internal/validator/*.go`, `validator_test.go` | Tasks 3, 4 | Medium |
-| 7 | Compose Infra + Cursor | `internal/compose/composer.go`, `cursor.go`, `cursor_test.go` | Tasks 2, 3, 4 | Medium |
-| 8 | Copilot Composer | `internal/compose/copilot.go`, `copilot_test.go` | Task 7 | Medium |
-| 9 | Claude + Codex Composers | `internal/compose/claude.go`, `codex.go`, `shared.go`, tests | Task 7 | Medium |
-| 10 | Importer Infra + GitHub | `internal/importer/importer.go`, `github.go`, `classify.go`, tests | Tasks 2, 3, 4 | High |
+| 1 ✅ | Project Scaffold | `go.mod`, `Makefile`, `.gitignore`, `cmd/ars/main.go` stub | — | Low |
+| 2 ✅ | Domain Types | `pkg/arslib/types.go`, `interfaces.go`, `types_test.go` | Task 1 | Low |
+| 3 ✅ | Config Package | `internal/config/manifest.go`, `types.go`, `manifest_test.go` | Task 2 | Low |
+| 4 ✅ | Markdown Utility | `internal/markdown/markdown.go`, `markdown_test.go` | Task 1 | Medium |
+| 5 ✅ | Scaffold (`ars init`) | `internal/scaffold/scaffold.go`, `templates/`, `scaffold_test.go` | Tasks 2, 3 | Medium |
+| 6 ✅ | Validator (`ars validate`) | `internal/validator/*.go`, `validator_test.go` | Tasks 3, 4 | Medium |
+| 7 ✅ | Compose Infra + Cursor | `internal/compose/composer.go`, `cursor.go`, `cursor_test.go` | Tasks 2, 3, 4 | Medium |
+| 8 ✅ | Copilot Composer | `internal/compose/copilot.go`, `copilot_test.go` | Task 7 | Medium |
+| 9 ✅ | Claude + Codex Composers | `internal/compose/claude.go`, `codex.go`, `shared.go`, tests | Task 7 | Medium |
+| 10 ✅ | Importer Infra + GitHub | `internal/importer/importer.go`, `github.go`, `classify.go`, tests | Tasks 2, 3, 4 | High |
 | 11 | Cursor + Claude Importers | `internal/importer/cursor.go`, `claude.go`, tests | Task 10 | Medium |
 | 12 | CLI Wire-up | `cmd/ars/main.go`, `internal/version/version.go`, `main_test.go` | Tasks 5–11 | Medium |
 | 13 | Security Hardening | `internal/safepath/safepath.go`, `safepath_test.go`, retrofit all I/O | Task 12 | High |

@@ -1,58 +1,11 @@
-# Go build artifacts
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Dependency directories
-/vendor/
-
-# Go workspace file
-go.work
-
-# Go test binary
+bin/
 *.test
+.env
+coverage.out
 
-# Generated files
-*.exe~
-*.dll~
-*.so~
-*.dylib~
-
-# macOS Finder
+# macOS
 .DS_Store
-.AppleDouble
-.LSOverride
 
-# Icon must end with two newlines
-Icon
-
-# Thumbnails
-._*
-
-# Files that might appear in the root of a volume
-.Spotlight-V100
-.Trashes
-
-# IDE/editor directories
+# IDE
 .idea/
 .vscode/
-
-# Logs
-*.log
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Temporary files
-*.tmp
-*.temp
-
-# Build directories
-bin/
-pkg/
