@@ -53,10 +53,14 @@ func validateSkills(root string) []arslib.Finding {
 		}
 
 		if _, err := os.Stat(absPath); err != nil {
+			msg := err.Error()
+			if os.IsNotExist(err) {
+				msg = "SKILL.md does not exist"
+			}
 			findings = append(findings, arslib.Finding{
 				Level:   arslib.Error,
 				Path:    relPath,
-				Message: "SKILL.md does not exist",
+				Message: msg,
 			})
 		}
 	}

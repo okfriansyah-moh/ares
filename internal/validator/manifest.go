@@ -45,7 +45,9 @@ func validateManifest(root string) []arslib.Finding {
 		msg := err.Error()
 		if strings.Contains(msg, "project.name is required") {
 			msg = "project.name is required"
-		} else if !strings.Contains(msg, "version is required") {
+		} else if strings.Contains(msg, "version is required") {
+			msg = "version is required"
+		} else {
 			msg = "manifest.yaml is unparseable"
 		}
 		return []arslib.Finding{{

@@ -59,10 +59,14 @@ func validatePrompts(root string) []arslib.Finding {
 
 		data, err := os.ReadFile(absPath)
 		if err != nil {
+			msg := err.Error()
+			if os.IsNotExist(err) {
+				msg = "prompt file does not exist"
+			}
 			findings = append(findings, arslib.Finding{
 				Level:   arslib.Error,
 				Path:    relPath,
-				Message: "prompt file does not exist",
+				Message: msg,
 			})
 			continue
 		}

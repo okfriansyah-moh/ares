@@ -142,12 +142,6 @@ func mergeChildSections(sections []markdown.Section, start int, base string, kin
 		if isTopLevelInstruction(heading) {
 			return strings.TrimSpace(b.String())
 		}
-		if kind == classAgent && ClassifySection(heading) == classSkill {
-			return strings.TrimSpace(b.String())
-		}
-		if kind == classSkill && ClassifySection(heading) == classAgent {
-			return strings.TrimSpace(b.String())
-		}
 		b.WriteString("\n\n## ")
 		b.WriteString(heading)
 		b.WriteString("\n\n")

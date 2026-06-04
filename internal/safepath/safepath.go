@@ -16,7 +16,10 @@ func Join(root string, parts ...string) (string, error) {
 	root = filepath.Clean(root)
 	joined := filepath.Join(append([]string{root}, parts...)...)
 	cleaned := filepath.Clean(joined)
-	rootClean := root + string(os.PathSeparator)
+	rootClean := root
+	if !strings.HasSuffix(rootClean, string(os.PathSeparator)) {
+		rootClean += string(os.PathSeparator)
+	}
 	if !strings.HasPrefix(cleaned+string(os.PathSeparator), rootClean) {
 		return "", fmt.Errorf("safepath: %w: %q escapes root %q", ErrPathEscape, joined, root)
 	}

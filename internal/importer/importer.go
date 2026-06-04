@@ -127,7 +127,6 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 		}
 	}
 
-	manifestRel := filepath.ToSlash(filepath.Join(".ai", "manifest.yaml"))
 	manifestPath, err := safepath.Join(root, ".ai", "manifest.yaml")
 	if err != nil {
 		return created, conflicts, fmt.Errorf("importer: %w", err)
@@ -141,7 +140,6 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 		if err := config.Write(root, &repo.Manifest); err != nil {
 			return created, conflicts, fmt.Errorf("importer: %w", err)
 		}
-		_ = manifestRel
 		created++
 	}
 

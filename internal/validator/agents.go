@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -63,10 +64,14 @@ func validateAgents(root string) []arslib.Finding {
 
 		data, err := os.ReadFile(absPath)
 		if err != nil {
+			msg := err.Error()
+			if os.IsNotExist(err) {
+				msg = "AGENT.md does not exist"
+			}
 			findings = append(findings, arslib.Finding{
 				Level:   arslib.Error,
 				Path:    relPath,
-				Message: "AGENT.md does not exist",
+				Message: msg,
 			})
 			continue
 		}
@@ -133,6 +138,13 @@ func validateSkillRef(root, agentPath, ref string) []arslib.Finding {
 			Message: err.Error(),
 		}}
 	}
+	if strings.TrimSpace(rel) == "" {
+		return []arslib.Finding{{
+			Level:   arslib.Error,
+			Path:    agentPath,
+			Message: "invalid skill reference: " + ref,
+		}}
+	}
 
 	parts := strings.Split(filepath.ToSlash(rel), "/")
 	absPath, err := safepath.Join(root, parts...)
@@ -158,7 +170,7 @@ func validateSkillRef(root, agentPath, ref string) []arslib.Finding {
 func normaliseSkillRef(ref string) (string, error) {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
-		return "", nil
+		return "", fmt.Errorf("invalid skill reference: empty")
 	}
 
 	switch {
@@ -170,6 +182,6 @@ func normaliseSkillRef(ref string) (string, error) {
 		if strings.Contains(ref, "..") {
 			return ref, nil
 		}
-		return "", nil
+		return "", fmt.Errorf("invalid skill reference: %s", ref)
 	}
 }
