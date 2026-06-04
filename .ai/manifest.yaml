@@ -1,0 +1,6 @@
+version: "2.0"
+project:
+  name: ares
+  description: Reference implementation of the AI Repository Standard
+defaults:
+  agent: architect

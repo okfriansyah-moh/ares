@@ -2,11 +2,94 @@
 
 # ARES
 
-## AI Repository Standard
+**AI Repository Standard** — define repository knowledge once in `.ai/`, generate provider-specific conventions for Cursor, GitHub Copilot, Claude, Codex, and future tools.
 
-Provider-agnostic repository standard for AI-assisted software development.
+---
 
-Define repository knowledge once in `.ai/`, then generate provider-specific conventions for Cursor, GitHub Copilot, Claude, Codex, and future tools.
+## Installation
+
+### One-line installer — macOS and Linux (no Go required)
+
+```bash
+curl -fsSL \
+  https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh \
+  | bash
+```
+
+After installation, add `ars` to your PATH:
+
+**zsh**
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+```
+
+**bash**
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+```
+
+**fish**
+```bash
+fish_add_path $HOME/.local/bin
+```
+
+Verify the installation:
+
+```bash
+ars --version
+```
+
+---
+
+### Go install (requires Go 1.26+)
+
+```bash
+go install github.com/ars-standard/ars/cmd/ars@latest
+```
+
+---
+
+### Docker
+
+```bash
+docker run --rm \
+  -v "$(pwd):/repo" \
+  ghcr.io/ars-standard/ars:latest \
+  compose --target cursor --root /repo
+```
+
+---
+
+### Manual download
+
+Download a pre-built binary from the [Releases page](https://github.com/okfriansyah-moh/ares/releases/latest):
+
+| Platform | Binary |
+|---|---|
+| macOS (Apple Silicon) | `ars-darwin-arm64` |
+| macOS (Intel) | `ars-darwin-amd64` |
+| Linux x86-64 | `ars-linux-amd64` |
+| Linux ARM64 | `ars-linux-arm64` |
+| Windows x86-64 | `ars-windows-amd64.exe` |
+
+Place the binary in any directory on your `PATH` and mark it executable:
+
+```bash
+chmod +x ars-darwin-arm64
+mv ars-darwin-arm64 ~/.local/bin/ars
+```
+
+---
+
+### Pin a specific version
+
+```bash
+ARS_VERSION=v1.0.0 curl -fsSL \
+  https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh \
+  | bash
+```
+
+---
 
 ## What ARES Is
 
@@ -21,71 +104,136 @@ Define repository knowledge once in `.ai/`, then generate provider-specific conv
 - Not a memory system.
 - Not a provider API integration.
 
+---
+
+## Quick Start
+
+```bash
+# 1. Initialise .ai/ in your repository
+ars init
+
+# 2. Edit your knowledge files
+#    .ai/manifest.yaml        — project identity
+#    .ai/instructions/        — repository-wide rules
+#    .ai/agents/              — role definitions
+#    .ai/skills/              — reusable knowledge
+#    .ai/prompts/             — task templates
+
+# 3. Validate structure
+ars validate
+
+# 4. Generate provider artifacts
+ars compose --target cursor    # → .cursor/
+ars compose --target copilot   # → .github/copilot-instructions.md
+ars compose --target claude    # → CLAUDE.md
+ars compose --target codex     # → AGENTS.md
+
+# 5. Or import from an existing provider setup
+ars import github              # from .github/copilot-instructions.md
+ars import cursor              # from .cursor/rules/
+ars import claude              # from CLAUDE.md
+```
+
+The golden rule: `delete all generated files → ars compose → everything comes back`.
+
+---
+
 ## Core Structure
 
 ```
 .ai/
-  manifest.yaml
-  instructions/
-  agents/
-  skills/
-  prompts/
+  manifest.yaml        ← project identity and defaults
+  instructions/        ← repository-wide rules
+  agents/              ← role definitions (AGENT.md per role)
+  skills/              ← reusable knowledge (SKILL.md per skill)
+  prompts/             ← reusable task templates
 ```
 
 Everything else is generated from this source.
 
-## Repository Layout
+---
 
-- `.ai/`
-  - `manifest.yaml` — repository metadata and defaults.
-  - `instructions/` — repository-wide rules and policies.
-  - `agents/` — role definitions and agent instructions.
-  - `skills/` — reusable knowledge units and best practices.
-  - `prompts/` — reusable execution units and templates.
+## Commands
 
-## Goals
+| Command | Description |
+|---|---|
+| `ars init` | Scaffold a valid `.ai/` skeleton in the current repository |
+| `ars validate` | Check `.ai/` structure, cross-references, and required sections |
+| `ars compose --target <T>` | Generate provider artifacts from `.ai/` |
+| `ars import <S>` | Convert a provider artifact into `.ai/` |
 
-1. Solve provider convention fragmentation.
-2. Keep repository knowledge centralized.
-3. Enable simple migration between providers.
-4. Keep the standard small and practical.
+### Compose targets
 
-## Command Concepts
+| `--target` | Output |
+|---|---|
+| `cursor` | `.cursor/rules/` and `.cursor/prompts/` |
+| `copilot` | `.github/copilot-instructions.md` |
+| `claude` | `CLAUDE.md` |
+| `codex` | `AGENTS.md` |
 
-- `ars init` — initialize the `.ai/` repository structure.
-- `ars validate` — verify required files, metadata, and structure.
-- `ars compose` — generate provider artifacts from `.ai/`.
-- `ars import` — convert existing provider-specific conventions into `.ai/`.
+### Import sources
 
-## Compose Targets
+| `<source>` | Reads from |
+|---|---|
+| `github` | `.github/copilot-instructions.md` |
+| `cursor` | `.cursor/rules/*.mdc` |
+| `claude` | `CLAUDE.md` |
 
-- `cursor` → generates `.cursor/`
-- `copilot` → generates `.github/`
-- `claude` → generates `CLAUDE.md`
-- `codex` → generates `AGENTS.md`
-
-## Why ARES Works
-
-- It keeps knowledge in one place.
-- It protects repositories from tool-specific lock-in.
-- It supports future provider additions without rewriting repository conventions.
+---
 
 ## Example Workflow
 
+**Migrate from GitHub Copilot to Cursor:**
+
 ```bash
-ars import github
-ars compose --target cursor
+ars import github              # converts .github/ → .ai/
+ars compose --target cursor    # generates .cursor/ from .ai/
 ```
 
-This moves repository conventions from GitHub Copilot into the `.ai/` standard, then generates a Cursor-compatible output.
+**Multi-tool team (Copilot + Cursor + Claude):**
+
+```bash
+# Each developer runs compose for their own tool
+ars compose --target cursor    # Developer A
+ars compose --target copilot   # Developer B
+ars compose --target claude    # Developer C
+```
+
+Same `.ai/` source. Different tooling. Shared knowledge.
+
+---
+
+## Why ARES Works
+
+Today, repository knowledge is fragmented:
+
+```
+.github/       ← GitHub Copilot
+.cursor/       ← Cursor
+CLAUDE.md      ← Claude Code
+AGENTS.md      ← OpenAI Codex
+```
+
+When you change tools or add a new team member using a different AI assistant, you rewrite everything. ARES solves this by treating `.ai/` as the source and all provider files as derived artifacts.
+
+---
 
 ## Success Criteria
 
-If the repository can move from provider-specific artifacts into `.ai/` and back again without losing intent, ARES is providing value.
+Repository knowledge can move into `.ai/`, remain understandable there, and be composed into provider conventions for any tool — without losing intent.
 
-## Notes
+---
 
-The canonical repository source is `.ai/`. All other provider artifacts are derived.
+## Documentation
+
+- [Architecture](docs/architecture.md) — system design, component responsibilities, security model
+- [Implementation Plan](docs/PLAN.md) — task breakdown, dependency graph, coding standards
+- [Specification](SPEC.md) — `.ai/` file format, CLI reference, provider mappings
+- [ADR-0001](docs/decisions/ADR-0001-go-cli.md) — why Go
+- [ADR-0002](docs/decisions/ADR-0002-markdown-as-source-format.md) — why Markdown
+- [ADR-0003](docs/decisions/ADR-0003-distroless-container.md) — why Distroless
+
+---
 
 ## License
 
