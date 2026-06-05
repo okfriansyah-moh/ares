@@ -3,7 +3,6 @@ package importer
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -26,6 +25,8 @@ var DefaultRegistry = NewRegistry()
 
 func init() {
 	DefaultRegistry.Register(&GitHubImporter{})
+	DefaultRegistry.Register(&CursorImporter{})
+	DefaultRegistry.Register(&ClaudeImporter{})
 }
 
 // NewRegistry returns an empty import registry.
@@ -127,15 +128,12 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 		}
 	}
 
-	manifestPath, err := safepath.Join(root, ".ai", "manifest.yaml")
+	exists, err := safepath.Exists(root, ".ai/manifest.yaml")
 	if err != nil {
 		return created, conflicts, fmt.Errorf("importer: %w", err)
 	}
-
-	if _, err := os.Stat(manifestPath); err == nil && !overwrite {
+	if exists && !overwrite {
 		conflicts++
-	} else if err != nil && !os.IsNotExist(err) {
-		return created, conflicts, fmt.Errorf("importer: %w", err)
 	} else {
 		if err := config.Write(root, &repo.Manifest); err != nil {
 			return created, conflicts, fmt.Errorf("importer: %w", err)
@@ -147,14 +145,15 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 }
 
 func writeIfAllowed(root, rel string, data []byte, overwrite bool) (bool, error) {
-	path, err := safepath.Join(root, strings.Split(rel, "/")...)
+	if _, err := safepath.Join(root, strings.Split(rel, "/")...); err != nil {
+		return false, err
+	}
+	exists, err := safepath.Exists(root, strings.TrimPrefix(filepath.ToSlash(rel), "/"))
 	if err != nil {
 		return false, err
 	}
-	if _, err := os.Stat(path); err == nil && !overwrite {
+	if exists && !overwrite {
 		return false, nil
-	} else if err != nil && !os.IsNotExist(err) {
-		return false, err
 	}
 	if err := safepath.WriteFile(root, rel, data, 0o644); err != nil {
 		return false, err

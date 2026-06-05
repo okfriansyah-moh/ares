@@ -27,7 +27,7 @@ func (g *GitHubImporter) Import(root string) (*arslib.Repository, error) {
 		return nil, fmt.Errorf("import github: %w", err)
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := safepath.ReadFile(root, ".github/copilot-instructions.md")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("import github: copilot-instructions.md not found at %s", path)

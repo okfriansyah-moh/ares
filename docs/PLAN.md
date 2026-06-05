@@ -652,7 +652,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 11 — Cursor + Claude Importers
+### Task 11 — Cursor + Claude Importers ✅
 
 **Goal:** Implement the `cursor` and `claude` import sources. Cursor reads `.cursor/rules/*.mdc`; Claude reads `CLAUDE.md` (identified by the `<!-- ars:source .ai/ -->` marker inserted by Task 9).
 
@@ -706,7 +706,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 12 — CLI Wire-up (`cmd/ars`)
+### Task 12 — CLI Wire-up (`cmd/ars`) ✅
 
 **Goal:** Wire all packages into the Cobra command tree. Each subcommand is a thin adapter: parse flags → call internal package → format output → set exit code. No business logic in `cmd/`.
 
@@ -749,7 +749,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 13 — Security Hardening (`internal/safepath`)
+### Task 13 — Security Hardening (`internal/safepath`) ✅
 
 **Goal:** Implement the shared security package that enforces path-traversal prevention, symlink rejection, and safe file write semantics. Retrofit all existing packages to use it. Every file-read and file-write operation in the codebase must go through this package.
 
@@ -804,7 +804,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 14 — Container + Release Hardening
+### Task 14 — Container + Release Hardening ✅
 
 **Goal:** Write the production Dockerfile (distroless, non-root, zero CVEs), the GitHub Actions CI workflow, and verify the full security posture with a `govulncheck` clean run.
 
@@ -878,7 +878,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 15 — Integration Tests + SPEC.md + README.md
+### Task 15 — Integration Tests + SPEC.md + README.md ✅
 
 **Goal:** End-to-end round-trip tests covering all four commands and all four compose targets, write the ARS v1 specification, and update the README with quick-start instructions and an architecture overview.
 
@@ -934,7 +934,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 ---
 
-### Task 16 — Installation Script + GitHub Release
+### Task 16 — Installation Script + GitHub Release ✅
 
 **Goal:** Ship ARES like Claude Code, `gh`, and `bun` — one `curl | bash` command downloads a pre-built binary, places it in `~/.local/bin/`, and prints shell-specific PATH setup instructions. No Go, no compiler, no SDK required on the end user's machine.
 
@@ -1088,12 +1088,12 @@ After installation the user sees:
 | 8 ✅ | Copilot Composer | `internal/compose/copilot.go`, `copilot_test.go` | Task 7 | Medium |
 | 9 ✅ | Claude + Codex Composers | `internal/compose/claude.go`, `codex.go`, `shared.go`, tests | Task 7 | Medium |
 | 10 ✅ | Importer Infra + GitHub | `internal/importer/importer.go`, `github.go`, `classify.go`, tests | Tasks 2, 3, 4 | High |
-| 11 | Cursor + Claude Importers | `internal/importer/cursor.go`, `claude.go`, tests | Task 10 | Medium |
-| 12 | CLI Wire-up | `cmd/ars/main.go`, `internal/version/version.go`, `main_test.go` | Tasks 5–11 | Medium |
-| 13 | Security Hardening | `internal/safepath/safepath.go`, `safepath_test.go`, retrofit all I/O | Task 12 | High |
-| 14 | Container + Release | `Dockerfile`, `.github/workflows/ci.yml`, Makefile additions | Task 13 | Low |
-| 15 | Integration Tests + Docs | `test/integration/roundtrip_test.go`, `SPEC.md`, `README.md` | Tasks 12–14 | Medium |
-| 16 | Installation Script + GitHub Release | `install.sh`, `.github/workflows/release.yml`, Makefile additions, `README.md` update | Task 15 | Medium |
+| 11 ✅ | Cursor + Claude Importers | `internal/importer/cursor.go`, `claude.go`, tests | Task 10 | Medium |
+| 12 ✅ | CLI Wire-up | `cmd/ars/main.go`, `internal/version/version.go`, `main_test.go` | Tasks 5–11 | Medium |
+| 13 ✅ | Security Hardening | `internal/safepath/safepath.go`, `safepath_test.go`, retrofit all I/O | Task 12 | High |
+| 14 ✅ | Container + Release | `Dockerfile`, `.github/workflows/ci.yml`, Makefile additions | Task 13 | Low |
+| 15 ✅ | Integration Tests + Docs | `test/integration/roundtrip_test.go`, `SPEC.md`, `README.md` | Tasks 12–14 | Medium |
+| 16 ✅ | Installation Script + GitHub Release | `install.sh`, `.github/workflows/release.yml`, Makefile additions, `README.md` update | Task 15 | Medium |
 
 ---
 

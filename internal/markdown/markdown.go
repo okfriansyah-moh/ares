@@ -121,7 +121,11 @@ func inlineText(node ast.Node, src []byte) string {
 	case *ast.String:
 		return string(n.Value)
 	case *ast.CodeSpan:
-		return string(n.Text(src))
+		var b strings.Builder
+		for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+			b.WriteString(inlineText(child, src))
+		}
+		return b.String()
 	case *ast.Emphasis, *ast.Link:
 		var b strings.Builder
 		for child := n.FirstChild(); child != nil; child = child.NextSibling() {

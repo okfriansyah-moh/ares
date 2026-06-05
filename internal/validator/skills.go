@@ -10,16 +10,7 @@ import (
 )
 
 func validateSkills(root string) []arslib.Finding {
-	skillsDir, err := safepath.Join(root, ".ai", "skills")
-	if err != nil {
-		return []arslib.Finding{{
-			Level:   arslib.Error,
-			Path:    ".ai/skills",
-			Message: err.Error(),
-		}}
-	}
-
-	entries, err := os.ReadDir(skillsDir)
+	entries, err := safepath.ReadDir(root, ".ai/skills")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -42,20 +33,11 @@ func validateSkills(root string) []arslib.Finding {
 	var findings []arslib.Finding
 	for _, name := range names {
 		relPath := filepath.ToSlash(filepath.Join(".ai", "skills", name, "SKILL.md"))
-		absPath, err := safepath.Join(root, ".ai", "skills", name, "SKILL.md")
-		if err != nil {
-			findings = append(findings, arslib.Finding{
-				Level:   arslib.Error,
-				Path:    relPath,
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		if _, err := os.Stat(absPath); err != nil {
-			msg := err.Error()
-			if os.IsNotExist(err) {
-				msg = "SKILL.md does not exist"
+		exists, err := safepath.Exists(root, relPath)
+		if err != nil || !exists {
+			msg := "SKILL.md does not exist"
+			if err != nil {
+				msg = err.Error()
 			}
 			findings = append(findings, arslib.Finding{
 				Level:   arslib.Error,

@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/ars-standard/ars/internal/safepath"
@@ -14,8 +13,6 @@ import (
 
 func TestLoad_ValidManifest(t *testing.T) {
 	root := t.TempDir()
-	aiDir := filepath.Join(root, ".ai")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
 
 	manifestYAML := `version: "2.0"
 project:
@@ -25,7 +22,7 @@ project:
 defaults:
   agent: architect
 `
-	require.NoError(t, os.WriteFile(filepath.Join(aiDir, "manifest.yaml"), []byte(manifestYAML), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/manifest.yaml", []byte(manifestYAML), 0o644))
 
 	got, err := Load(root)
 	require.NoError(t, err)
@@ -52,9 +49,7 @@ func TestLoad_MissingFile(t *testing.T) {
 
 func TestLoad_InvalidYAML(t *testing.T) {
 	root := t.TempDir()
-	aiDir := filepath.Join(root, ".ai")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(aiDir, "manifest.yaml"), []byte("version: [\n"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/manifest.yaml", []byte("version: [\n"), 0o644))
 
 	_, err := Load(root)
 	require.Error(t, err)
