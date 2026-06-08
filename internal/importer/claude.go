@@ -57,6 +57,7 @@ func normalizeClaudeGeneratedSections(sections []markdown.Section, projectName s
 			out[i].Level != 2 ||
 			strings.EqualFold(heading, projectName) ||
 			isTopLevelInstruction(heading) ||
+			isProviderIndexHeading(heading) ||
 			isClaudeAgentBodyHeading(heading) ||
 			ClassifySection(heading) != classInstruction {
 			continue
@@ -64,6 +65,11 @@ func normalizeClaudeGeneratedSections(sections []markdown.Section, projectName s
 		out[i].Heading = "Agent: " + heading
 	}
 	return out
+}
+
+func isProviderIndexHeading(heading string) bool {
+	h := strings.ToLower(strings.TrimSpace(heading))
+	return h == "claude skills" || h == "codex skills" || h == "github copilot files"
 }
 
 func isClaudeAgentBodyHeading(heading string) bool {

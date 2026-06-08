@@ -27,6 +27,7 @@ func init() {
 	DefaultRegistry.Register(&GitHubImporter{})
 	DefaultRegistry.Register(&CursorImporter{})
 	DefaultRegistry.Register(&ClaudeImporter{})
+	DefaultRegistry.Register(&CodexImporter{})
 }
 
 // NewRegistry returns an empty import registry.
@@ -128,6 +129,22 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 		}
 	}
 
+	prompts := append([]arslib.Prompt(nil), repo.Prompts...)
+	sort.Slice(prompts, func(i, j int) bool { return prompts[i].ID < prompts[j].ID })
+
+	for _, prompt := range prompts {
+		rel := filepath.ToSlash(filepath.Join(".ai", "prompts", prompt.ID+".md"))
+		ok, err := writeIfAllowed(root, rel, []byte(prompt.Content), overwrite)
+		if err != nil {
+			return created, conflicts, err
+		}
+		if ok {
+			created++
+		} else {
+			conflicts++
+		}
+	}
+
 	exists, err := safepath.Exists(root, ".ai/manifest.yaml")
 	if err != nil {
 		return created, conflicts, fmt.Errorf("importer: %w", err)
@@ -177,6 +194,11 @@ func validateRepositoryPaths(root string, repo *arslib.Repository) error {
 	}
 	for _, inst := range repo.Instructions {
 		if _, err := safepath.Join(root, ".ai", "instructions", inst.ID+".md"); err != nil {
+			return err
+		}
+	}
+	for _, prompt := range repo.Prompts {
+		if _, err := safepath.Join(root, ".ai", "prompts", prompt.ID+".md"); err != nil {
 			return err
 		}
 	}

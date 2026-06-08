@@ -124,6 +124,29 @@ Owns testing.
 	assert.True(t, found)
 }
 
+func TestRun_BacktickedSkillRef(t *testing.T) {
+	root := t.TempDir()
+	writeValidTree(t, root)
+
+	agentWithBackticks := `## Role
+Owns testing.
+
+## Responsibilities
+- Validate structure
+
+## Uses
+- ` + "`" + `.ai/skills/example/SKILL.md` + "`" + `
+
+## Boundaries
+- No runtime execution
+`
+	require.NoError(t, safepath.WriteFile(root, ".ai/agents/planner/AGENT.md", []byte(agentWithBackticks), 0o644))
+
+	findings, err := Run(root)
+	require.NoError(t, err)
+	assert.Empty(t, errorFindings(findings))
+}
+
 func TestRun_DeterministicOrder(t *testing.T) {
 	root := t.TempDir()
 	writeValidTree(t, root)

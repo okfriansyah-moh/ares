@@ -99,7 +99,7 @@ func extractSkillRefs(content string) []string {
 		}
 		line = strings.TrimLeft(line, "-*")
 		line = strings.TrimSpace(line)
-		line = strings.Trim(line, `"'`)
+		line = strings.Trim(line, "\"'`")
 		if line == "" {
 			continue
 		}

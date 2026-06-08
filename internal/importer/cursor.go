@@ -12,6 +12,8 @@ import (
 const (
 	cursorTypeAgentRequested = "agent-requested"
 	cursorTypeAlways         = "always"
+	cursorARSTypeAgent       = "agent"
+	cursorARSTypeInstruction = "instruction"
 )
 
 // CursorImporter imports from .cursor/rules/*.mdc.
@@ -50,9 +52,10 @@ func (c *CursorImporter) Import(root string) (*arslib.Repository, error) {
 		switch ruleType {
 		case cursorTypeAgentRequested:
 			repo.Agents = append(repo.Agents, arslib.Agent{
-				ID:      id,
-				Path:    filepath.ToSlash(filepath.Join(relBase, "agents", id, "AGENT.md")),
-				Content: body,
+				ID:        id,
+				Path:      filepath.ToSlash(filepath.Join(relBase, "agents", id, "AGENT.md")),
+				Content:   body,
+				SkillRefs: extractSkillRefs(body),
 			})
 		case cursorTypeAlways:
 			repo.Instructions = append(repo.Instructions, arslib.Instruction{
@@ -73,14 +76,39 @@ func parseCursorRule(data []byte) (ruleType string, body string) {
 		return "", strings.TrimSpace(text)
 	}
 
+	meta := map[string]string{}
+
 	for _, line := range strings.Split(parts[1], "\n") {
 		key, value, ok := strings.Cut(line, ":")
 		if !ok {
 			continue
 		}
-		if strings.TrimSpace(key) == "type" {
-			ruleType = strings.TrimSpace(value)
-			break
+		meta[strings.TrimSpace(key)] = strings.TrimSpace(value)
+	}
+
+	if kind, ok := meta["arsType"]; ok {
+		switch strings.Trim(kind, `"'`) {
+		case cursorARSTypeAgent:
+			ruleType = cursorTypeAgentRequested
+		case cursorARSTypeInstruction:
+			ruleType = cursorTypeAlways
+		}
+	}
+
+	if ruleType == "" {
+		if typ, ok := meta["type"]; ok {
+			ruleType = strings.TrimSpace(typ)
+		}
+	}
+
+	if ruleType == "" {
+		if always, ok := meta["alwaysApply"]; ok {
+			switch strings.Trim(strings.ToLower(always), `"'`) {
+			case "true":
+				ruleType = cursorTypeAlways
+			case "false":
+				ruleType = cursorTypeAgentRequested
+			}
 		}
 	}
 

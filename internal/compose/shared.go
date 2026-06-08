@@ -2,54 +2,13 @@ package compose
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
-// composerFormat configures shared single-file markdown compose output.
-type composerFormat struct {
-	agentSection func(agent arslib.Agent, skills map[string]arslib.Skill) string
-}
-
-func buildMarkdownOutput(format composerFormat, repo *arslib.Repository) string {
-	var b strings.Builder
-	b.WriteString(arsSourceMarker)
-	b.WriteString("# ")
-	b.WriteString(repo.Manifest.Project.Name)
-	b.WriteString("\n\n")
-
-	instructions := append([]arslib.Instruction(nil), repo.Instructions...)
-	sort.Slice(instructions, func(i, j int) bool {
-		return instructions[i].ID < instructions[j].ID
-	})
-
-	if len(instructions) > 0 {
-		b.WriteString("## Repository Instructions\n\n")
-		for _, inst := range instructions {
-			b.WriteString(inst.Content)
-			if !strings.HasSuffix(inst.Content, "\n") {
-				b.WriteByte('\n')
-			}
-			b.WriteByte('\n')
-		}
-	}
-
-	skillByID := indexSkills(repo.Skills)
-	agents := append([]arslib.Agent(nil), repo.Agents...)
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].ID < agents[j].ID
-	})
-
-	for _, agent := range agents {
-		b.WriteString(format.agentSection(agent, skillByID))
-		b.WriteByte('\n')
-	}
-
-	return b.String()
-}
+const arsSourceMarker = "<!-- ars:source .ai/ -->\n"
 
 func claudeAgentSection(agent arslib.Agent, skills map[string]arslib.Skill) string {
 	var b strings.Builder
@@ -78,5 +37,13 @@ func validateAgentIDs(root string, agents []arslib.Agent) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func detectNormalizedCollision(seen map[string]string, normalized, original, target, kind string) error {
+	if prev, ok := seen[normalized]; ok && prev != original {
+		return fmt.Errorf("compose %s: %s id %q normalizes to %q which collides with %q", target, kind, original, normalized, prev)
+	}
+	seen[normalized] = original
 	return nil
 }
