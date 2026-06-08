@@ -6,22 +6,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/markdown"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/markdown"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 func validatePrompts(root string) []arslib.Finding {
-	promptsDir, err := safepath.Join(root, ".ai", "prompts")
-	if err != nil {
-		return []arslib.Finding{{
-			Level:   arslib.Error,
-			Path:    ".ai/prompts",
-			Message: err.Error(),
-		}}
-	}
-
-	entries, err := os.ReadDir(promptsDir)
+	entries, err := safepath.ReadDir(root, ".ai/prompts")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -47,17 +38,7 @@ func validatePrompts(root string) []arslib.Finding {
 	var findings []arslib.Finding
 	for _, name := range names {
 		relPath := filepath.ToSlash(filepath.Join(".ai", "prompts", name))
-		absPath, err := safepath.Join(root, ".ai", "prompts", name)
-		if err != nil {
-			findings = append(findings, arslib.Finding{
-				Level:   arslib.Error,
-				Path:    relPath,
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		data, err := os.ReadFile(absPath)
+		data, err := safepath.ReadFile(root, relPath)
 		if err != nil {
 			msg := err.Error()
 			if os.IsNotExist(err) {

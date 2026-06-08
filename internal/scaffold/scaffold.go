@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/ars-standard/ars/internal/safepath"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
 )
 
 //go:embed templates
@@ -41,20 +41,17 @@ func Run(opts Options) error {
 		return fmt.Errorf("scaffold: %w", err)
 	}
 
-	aiDir, err := safepath.Join(root, ".ai")
+	exists, err := safepath.Exists(root, ".ai")
 	if err != nil {
 		return fmt.Errorf("scaffold: %w", err)
 	}
-
-	if _, err := os.Stat(aiDir); err == nil {
+	if exists {
 		if !opts.Force {
 			return ErrAlreadyInitialised
 		}
-		if err := os.RemoveAll(aiDir); err != nil {
+		if err := safepath.RemoveAll(root, ".ai"); err != nil {
 			return fmt.Errorf("scaffold: %w", err)
 		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("scaffold: %w", err)
 	}
 
 	data := templateData{ProjectName: filepath.Base(root)}
@@ -79,7 +76,7 @@ func Run(opts Options) error {
 		}
 
 		targetRel := filepath.Join(".ai", filepath.FromSlash(rel))
-		if err := writeFile(root, targetRel, content); err != nil {
+		if err := safepath.WriteFile(root, targetRel, content, 0o644); err != nil {
 			return err
 		}
 		return nil
@@ -108,24 +105,4 @@ func renderTemplate(path string, data templateData) ([]byte, error) {
 		return nil, fmt.Errorf("scaffold: execute template %q: %w", path, err)
 	}
 	return buf.Bytes(), nil
-}
-
-func writeFile(root, rel string, data []byte) error {
-	path, err := safepath.Join(root, rel)
-	if err != nil {
-		return fmt.Errorf("scaffold: %w", err)
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("scaffold: %w", err)
-	}
-
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return fmt.Errorf("scaffold: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("scaffold: %w", err)
-	}
-	return nil
 }

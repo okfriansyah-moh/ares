@@ -2,13 +2,12 @@ package compose
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 const (
@@ -29,26 +28,13 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		return fmt.Errorf("compose cursor: repository is nil")
 	}
 
-	cursorDir, err := safepath.Join(root, ".cursor")
-	if err != nil {
+	if err := resetDir(root, ".cursor"); err != nil {
 		return fmt.Errorf("compose cursor: %w", err)
 	}
-	rulesDir, err := safepath.Join(root, ".cursor", "rules")
-	if err != nil {
+	if err := safepath.MkdirAll(root, ".cursor/rules", 0o755); err != nil {
 		return fmt.Errorf("compose cursor: %w", err)
 	}
-	promptsDir, err := safepath.Join(root, ".cursor", "prompts")
-	if err != nil {
-		return fmt.Errorf("compose cursor: %w", err)
-	}
-
-	if err := resetDir(cursorDir); err != nil {
-		return fmt.Errorf("compose cursor: %w", err)
-	}
-	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
-		return fmt.Errorf("compose cursor: %w", err)
-	}
-	if err := os.MkdirAll(promptsDir, 0o755); err != nil {
+	if err := safepath.MkdirAll(root, ".cursor/prompts", 0o755); err != nil {
 		return fmt.Errorf("compose cursor: %w", err)
 	}
 
@@ -166,9 +152,6 @@ func sanitizeRuleName(name string) string {
 	return base
 }
 
-func resetDir(path string) error {
-	if err := os.RemoveAll(path); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return nil
+func resetDir(root, rel string) error {
+	return safepath.RemoveAll(root, rel)
 }

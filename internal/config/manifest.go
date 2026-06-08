@@ -2,28 +2,17 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"gopkg.in/yaml.v3"
 )
 
 const maxYAMLDepth = 8
 
-func manifestPath(root string) (string, error) {
-	return safepath.Join(root, ".ai", "manifest.yaml")
-}
-
 // Load reads and parses .ai/manifest.yaml under root and validates it.
 func Load(root string) (*arslib.Manifest, error) {
-	path, err := manifestPath(root)
-	if err != nil {
-		return nil, fmt.Errorf("config: %w", err)
-	}
-
-	data, err := os.ReadFile(path)
+	data, err := safepath.ReadFile(root, ".ai/manifest.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("config: %w", err)
 	}
@@ -60,26 +49,12 @@ func Write(root string, m *arslib.Manifest) error {
 		return err
 	}
 
-	path, err := manifestPath(root)
-	if err != nil {
-		return fmt.Errorf("config: %w", err)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("config: %w", err)
-	}
-
 	data, err := yaml.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
 
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return fmt.Errorf("config: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
+	if err := safepath.WriteFile(root, ".ai/manifest.yaml", data, 0o644); err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
 

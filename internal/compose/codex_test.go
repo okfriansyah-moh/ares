@@ -1,11 +1,11 @@
 package compose
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func TestCodexComposer_SourceMarker(t *testing.T) {
 
 	require.NoError(t, (&CodexComposer{}).Compose(root, repo))
 
-	data, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
+	data, err := safepath.ReadFile(root, "AGENTS.md")
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "<!-- ars:source .ai/ -->")
 }
@@ -53,12 +53,11 @@ func TestCodexComposer_Idempotent(t *testing.T) {
 	composer := &CodexComposer{}
 	require.NoError(t, composer.Compose(root, repo))
 
-	path := filepath.Join(root, "AGENTS.md")
-	first, err := os.ReadFile(path)
+	first, err := safepath.ReadFile(root, "AGENTS.md")
 	require.NoError(t, err)
 
 	require.NoError(t, composer.Compose(root, repo))
-	second, err := os.ReadFile(path)
+	second, err := safepath.ReadFile(root, "AGENTS.md")
 	require.NoError(t, err)
 
 	assert.Equal(t, first, second)

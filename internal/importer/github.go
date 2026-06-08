@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/markdown"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/markdown"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 var h1LineRe = regexp.MustCompile(`(?m)^#\s+(.+)\s*$`)
@@ -27,7 +27,7 @@ func (g *GitHubImporter) Import(root string) (*arslib.Repository, error) {
 		return nil, fmt.Errorf("import github: %w", err)
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := safepath.ReadFile(root, ".github/copilot-instructions.md")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("import github: copilot-instructions.md not found at %s", path)

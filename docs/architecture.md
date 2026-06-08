@@ -452,8 +452,8 @@ ENTRYPOINT ["/ars"]
 ### Image Tagging Convention
 
 ```
-ghcr.io/ars-standard/ars:v1.0.0        ← immutable release tag
-ghcr.io/ars-standard/ars:latest        ← mutable latest (CI use)
+ghcr.io/okfriansyah-moh/ares:v1.0.0        ← immutable release tag
+ghcr.io/okfriansyah-moh/ares:latest        ← mutable latest (CI use)
 ```
 
 Releases are signed with `cosign` and published with a Software Bill of Materials (SBOM).

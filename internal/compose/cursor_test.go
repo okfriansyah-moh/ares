@@ -4,12 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,13 +38,13 @@ func TestCursorComposer_BasicOutput(t *testing.T) {
 	require.FileExists(t, rulePath)
 	require.FileExists(t, agentRulePath)
 
-	ruleData, err := os.ReadFile(rulePath)
+	ruleData, err := safepath.ReadFile(root, ".cursor/rules/repo-rules.mdc")
 	require.NoError(t, err)
 	assert.Contains(t, string(ruleData), "type: always")
 	assert.Contains(t, string(ruleData), "<!-- project: demo -->")
 	assert.Contains(t, string(ruleData), "Repository rules.")
 
-	agentData, err := os.ReadFile(agentRulePath)
+	agentData, err := safepath.ReadFile(root, ".cursor/rules/planner.mdc")
 	require.NoError(t, err)
 	assert.Contains(t, string(agentData), "type: agent-requested")
 	assert.Contains(t, string(agentData), "Plans work.")
@@ -67,7 +67,7 @@ func TestCursorComposer_SkillInlined(t *testing.T) {
 
 	require.NoError(t, (&CursorComposer{}).Compose(root, repo))
 
-	data, err := os.ReadFile(filepath.Join(root, ".cursor", "rules", "architect.mdc"))
+	data, err := safepath.ReadFile(root, ".cursor/rules/architect.mdc")
 	require.NoError(t, err)
 	body := string(data)
 	assert.Contains(t, body, "Architecture guidance.")
@@ -86,12 +86,11 @@ func TestCursorComposer_NoPrompts(t *testing.T) {
 
 	require.NoError(t, (&CursorComposer{}).Compose(root, repo))
 
-	promptsDir := filepath.Join(root, ".cursor", "prompts")
-	info, err := os.Stat(promptsDir)
+	exists, err := safepath.Exists(root, ".cursor/prompts")
 	require.NoError(t, err)
-	require.True(t, info.IsDir())
+	require.True(t, exists)
 
-	entries, err := os.ReadDir(promptsDir)
+	entries, err := safepath.ReadDir(root, ".cursor/prompts")
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
@@ -116,10 +115,10 @@ func TestCursorComposer_Idempotent(t *testing.T) {
 
 	composer := &CursorComposer{}
 	require.NoError(t, composer.Compose(root, repo))
-	first := treeChecksum(t, filepath.Join(root, ".cursor"))
+	first := treeChecksum(t, root, ".cursor")
 
 	require.NoError(t, composer.Compose(root, repo))
-	second := treeChecksum(t, filepath.Join(root, ".cursor"))
+	second := treeChecksum(t, root, ".cursor")
 
 	assert.Equal(t, first, second)
 }
@@ -136,15 +135,14 @@ func TestCursorComposer_PathTraversal(t *testing.T) {
 
 	require.NoError(t, (&CursorComposer{}).Compose(root, repo))
 
-	rulesDir := filepath.Join(root, ".cursor", "rules")
-	entries, err := os.ReadDir(rulesDir)
+	entries, err := safepath.ReadDir(root, ".cursor/rules")
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
 	assert.Equal(t, "evil.mdc", entries[0].Name())
 
-	outside := filepath.Join(root, "evil.mdc")
-	_, err = os.Stat(outside)
-	assert.True(t, os.IsNotExist(err))
+	exists, err := safepath.Exists(root, "evil.mdc")
+	require.NoError(t, err)
+	assert.False(t, exists)
 }
 
 func TestCompose_UnknownTarget(t *testing.T) {
@@ -157,10 +155,12 @@ func TestCursorRuleHeader(t *testing.T) {
 	assert.Equal(t, "---\ntype: always\n---\n", cursorRuleHeader("always"))
 }
 
-func treeChecksum(t *testing.T, dir string) string {
+func treeChecksum(t *testing.T, root, relDir string) string {
 	t.Helper()
 	h := sha256.New()
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	dir, err := safepath.Join(root, relDir)
+	require.NoError(t, err)
+	err = safepath.WalkDir(root, relDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -171,7 +171,7 @@ func treeChecksum(t *testing.T, dir string) string {
 		if err != nil {
 			return err
 		}
-		data, err := os.ReadFile(path)
+		data, err := safepath.ReadFile(root, filepath.ToSlash(filepath.Join(relDir, rel)))
 		if err != nil {
 			return err
 		}

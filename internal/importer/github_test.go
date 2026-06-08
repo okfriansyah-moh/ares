@@ -1,11 +1,10 @@
 package importer
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,9 +29,7 @@ Reviews changes.
 
 func writeCopilotFile(t *testing.T, root, content string) {
 	t.Helper()
-	dir := filepath.Join(root, ".github")
-	require.NoError(t, os.MkdirAll(dir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "copilot-instructions.md"), []byte(content), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".github/copilot-instructions.md", []byte(content), 0o644))
 }
 
 func TestGitHubImporter_BasicParse(t *testing.T) {
@@ -107,17 +104,14 @@ func TestWriteRepository_SkipExisting(t *testing.T) {
 		}},
 	}
 
-	aiDir := filepath.Join(root, ".ai", "instructions")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
-	existing := filepath.Join(aiDir, "rules.md")
-	require.NoError(t, os.WriteFile(existing, []byte("keep me"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/instructions/rules.md", []byte("keep me"), 0o644))
 
 	created, conflicts, err := WriteRepository(root, repo, false)
 	require.NoError(t, err)
 	assert.Equal(t, 1, conflicts)
 	assert.Equal(t, 1, created) // manifest only
 
-	data, err := os.ReadFile(existing)
+	data, err := safepath.ReadFile(root, ".ai/instructions/rules.md")
 	require.NoError(t, err)
 	assert.Equal(t, "keep me", string(data))
 }
@@ -135,17 +129,14 @@ func TestWriteRepository_Overwrite(t *testing.T) {
 		}},
 	}
 
-	aiDir := filepath.Join(root, ".ai", "instructions")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
-	existing := filepath.Join(aiDir, "rules.md")
-	require.NoError(t, os.WriteFile(existing, []byte("old"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/instructions/rules.md", []byte("old"), 0o644))
 
 	created, conflicts, err := WriteRepository(root, repo, true)
 	require.NoError(t, err)
 	assert.Equal(t, 0, conflicts)
 	assert.Equal(t, 2, created)
 
-	data, err := os.ReadFile(existing)
+	data, err := safepath.ReadFile(root, ".ai/instructions/rules.md")
 	require.NoError(t, err)
 	assert.Equal(t, "new content", string(data))
 }

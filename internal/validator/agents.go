@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/markdown"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/markdown"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 var requiredAgentSections = []string{
@@ -20,16 +20,7 @@ var requiredAgentSections = []string{
 }
 
 func validateAgents(root string) []arslib.Finding {
-	agentsDir, err := safepath.Join(root, ".ai", "agents")
-	if err != nil {
-		return []arslib.Finding{{
-			Level:   arslib.Error,
-			Path:    ".ai/agents",
-			Message: err.Error(),
-		}}
-	}
-
-	entries, err := os.ReadDir(agentsDir)
+	entries, err := safepath.ReadDir(root, ".ai/agents")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -52,17 +43,7 @@ func validateAgents(root string) []arslib.Finding {
 	var findings []arslib.Finding
 	for _, name := range names {
 		relPath := filepath.ToSlash(filepath.Join(".ai", "agents", name, "AGENT.md"))
-		absPath, err := safepath.Join(root, ".ai", "agents", name, "AGENT.md")
-		if err != nil {
-			findings = append(findings, arslib.Finding{
-				Level:   arslib.Error,
-				Path:    relPath,
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		data, err := os.ReadFile(absPath)
+		data, err := safepath.ReadFile(root, relPath)
 		if err != nil {
 			msg := err.Error()
 			if os.IsNotExist(err) {
@@ -147,8 +128,7 @@ func validateSkillRef(root, agentPath, ref string) []arslib.Finding {
 	}
 
 	parts := strings.Split(filepath.ToSlash(rel), "/")
-	absPath, err := safepath.Join(root, parts...)
-	if err != nil {
+	if _, err := safepath.Join(root, parts...); err != nil {
 		return []arslib.Finding{{
 			Level:   arslib.Error,
 			Path:    agentPath,
@@ -156,7 +136,15 @@ func validateSkillRef(root, agentPath, ref string) []arslib.Finding {
 		}}
 	}
 
-	if _, err := os.Stat(absPath); err != nil {
+	exists, err := safepath.Exists(root, filepath.ToSlash(rel))
+	if err != nil {
+		return []arslib.Finding{{
+			Level:   arslib.Error,
+			Path:    agentPath,
+			Message: err.Error(),
+		}}
+	}
+	if !exists {
 		return []arslib.Finding{{
 			Level:   arslib.Error,
 			Path:    agentPath,

@@ -1,4 +1,4 @@
-module github.com/ars-standard/ars
+module github.com/okfriansyah-moh/ares
 
 go 1.26
 

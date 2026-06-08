@@ -1,12 +1,12 @@
 package validator
 
 import (
-	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/config"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/config"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 var knownManifestVersions = map[string]struct{}{
@@ -15,7 +15,7 @@ var knownManifestVersions = map[string]struct{}{
 
 func validateManifest(root string) []arslib.Finding {
 	manifestPath := ".ai/manifest.yaml"
-	absPath, err := safepath.Join(root, ".ai", "manifest.yaml")
+	exists, err := safepath.Exists(root, manifestPath)
 	if err != nil {
 		return []arslib.Finding{{
 			Level:   arslib.Error,
@@ -24,18 +24,11 @@ func validateManifest(root string) []arslib.Finding {
 		}}
 	}
 
-	if _, err := os.Stat(absPath); err != nil {
-		if os.IsNotExist(err) {
-			return []arslib.Finding{{
-				Level:   arslib.Error,
-				Path:    manifestPath,
-				Message: "manifest.yaml does not exist",
-			}}
-		}
+	if !exists {
 		return []arslib.Finding{{
 			Level:   arslib.Error,
 			Path:    manifestPath,
-			Message: err.Error(),
+			Message: "manifest.yaml does not exist",
 		}}
 	}
 
@@ -84,10 +77,9 @@ func validateManifest(root string) []arslib.Finding {
 }
 
 func agentExists(root, agentID string) bool {
-	path, err := safepath.Join(root, ".ai", "agents", agentID, "AGENT.md")
+	exists, err := safepath.Exists(root, filepath.ToSlash(filepath.Join(".ai", "agents", agentID, "AGENT.md")))
 	if err != nil {
 		return false
 	}
-	_, err = os.Stat(path)
-	return err == nil
+	return exists
 }

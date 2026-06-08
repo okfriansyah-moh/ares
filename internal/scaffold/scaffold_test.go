@@ -2,11 +2,11 @@ package scaffold
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/internal/config"
+	"github.com/okfriansyah-moh/ares/internal/config"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,18 +31,15 @@ func TestRun_FreshDirectory(t *testing.T) {
 
 func TestRun_AlreadyExists(t *testing.T) {
 	root := t.TempDir()
-	aiDir := filepath.Join(root, ".ai")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
 
 	original := []byte("version: \"2.0\"\nproject:\n  name: keep-me\n")
-	manifestPath := filepath.Join(aiDir, "manifest.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, original, 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/manifest.yaml", original, 0o644))
 
 	err := Run(Options{Root: root})
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrAlreadyInitialised))
 
-	got, readErr := os.ReadFile(manifestPath)
+	got, readErr := safepath.ReadFile(root, ".ai/manifest.yaml")
 	require.NoError(t, readErr)
 	assert.Equal(t, original, got)
 }
@@ -51,8 +48,7 @@ func TestRun_Force(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "force-repo")
 	require.NoError(t, Run(Options{Root: root}))
 
-	manifestPath := filepath.Join(root, ".ai", "manifest.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, []byte("version: \"2.0\"\nproject:\n  name: stale\n"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/manifest.yaml", []byte("version: \"2.0\"\nproject:\n  name: stale\n"), 0o644))
 
 	err := Run(Options{Root: root, Force: true})
 	require.NoError(t, err)

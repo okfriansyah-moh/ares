@@ -23,7 +23,7 @@ Implement the CLI in Go 1.26.
 
 **Gained:**
 - Single static binary (`CGO_ENABLED=0`) — no runtime, no dynamic linker
-- `go install github.com/ars-standard/ars/cmd/ars@latest` works out of the box
+- `go install github.com/okfriansyah-moh/ares/cmd/ars@latest` works out of the box
 - Cross-compilation is trivial with `GOOS`/`GOARCH`
 - Strong stdlib for file I/O, path manipulation, and YAML
 - Fast compile times

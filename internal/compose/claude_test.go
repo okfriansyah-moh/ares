@@ -1,11 +1,11 @@
 package compose
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func TestClaudeComposer_SourceMarker(t *testing.T) {
 
 	require.NoError(t, (&ClaudeComposer{}).Compose(root, repo))
 
-	data, err := os.ReadFile(filepath.Join(root, "CLAUDE.md"))
+	data, err := safepath.ReadFile(root, "CLAUDE.md")
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "<!-- ars:source .ai/ -->")
 }
@@ -53,12 +53,11 @@ func TestClaudeComposer_Idempotent(t *testing.T) {
 	composer := &ClaudeComposer{}
 	require.NoError(t, composer.Compose(root, repo))
 
-	path := filepath.Join(root, "CLAUDE.md")
-	first, err := os.ReadFile(path)
+	first, err := safepath.ReadFile(root, "CLAUDE.md")
 	require.NoError(t, err)
 
 	require.NoError(t, composer.Compose(root, repo))
-	second, err := os.ReadFile(path)
+	second, err := safepath.ReadFile(root, "CLAUDE.md")
 	require.NoError(t, err)
 
 	assert.Equal(t, first, second)
@@ -77,12 +76,13 @@ func TestClaudeComposer_PathTraversal(t *testing.T) {
 	err := (&ClaudeComposer{}).Compose(root, repo)
 	require.Error(t, err)
 
-	_, err = os.Stat(filepath.Join(root, "CLAUDE.md"))
-	assert.True(t, os.IsNotExist(err))
+	exists, err := safepath.Exists(root, "CLAUDE.md")
+	require.NoError(t, err)
+	assert.False(t, exists)
 
-	outside := filepath.Join(root, "evil.md")
-	_, err = os.Stat(outside)
-	assert.True(t, os.IsNotExist(err))
+	exists, err = safepath.Exists(root, "evil.md")
+	require.NoError(t, err)
+	assert.False(t, exists)
 }
 
 func TestClaudeAgentSection_LowercaseHeading(t *testing.T) {

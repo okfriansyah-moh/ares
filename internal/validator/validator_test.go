@@ -1,12 +1,11 @@
 package validator
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/internal/scaffold"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/internal/scaffold"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,13 +27,8 @@ func writeValidTree(t *testing.T, root string) {
 	t.Helper()
 	require.NoError(t, scaffold.Run(scaffold.Options{Root: root}))
 
-	agentDir := filepath.Join(root, ".ai", "agents", "planner")
-	require.NoError(t, os.MkdirAll(agentDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "AGENT.md"), []byte(validAgent), 0o644))
-
-	skillDir := filepath.Join(root, ".ai", "skills", "example")
-	require.NoError(t, os.MkdirAll(skillDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Example\n"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/agents/planner/AGENT.md", []byte(validAgent), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/skills/example/SKILL.md", []byte("# Example\n"), 0o644))
 }
 
 func errorFindings(findings []arslib.Finding) []arslib.Finding {
@@ -75,8 +69,7 @@ func TestRun_MissingAgentSection(t *testing.T) {
 	root := t.TempDir()
 	writeValidTree(t, root)
 
-	agentPath := filepath.Join(root, ".ai", "agents", "planner", "AGENT.md")
-	require.NoError(t, os.WriteFile(agentPath, []byte("## Responsibilities\nOnly one section.\n"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/agents/planner/AGENT.md", []byte("## Responsibilities\nOnly one section.\n"), 0o644))
 
 	findings, err := Run(root)
 	require.NoError(t, err)
@@ -105,7 +98,6 @@ func TestRun_BrokenSkillRef(t *testing.T) {
 	root := t.TempDir()
 	writeValidTree(t, root)
 
-	agentPath := filepath.Join(root, ".ai", "agents", "planner", "AGENT.md")
 	brokenAgent := `## Role
 Owns testing.
 
@@ -118,7 +110,7 @@ Owns testing.
 ## Boundaries
 - No runtime execution
 `
-	require.NoError(t, os.WriteFile(agentPath, []byte(brokenAgent), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/agents/planner/AGENT.md", []byte(brokenAgent), 0o644))
 
 	findings, err := Run(root)
 	require.NoError(t, err)
@@ -149,7 +141,6 @@ func TestRun_PathTraversalInSkillRef(t *testing.T) {
 	root := t.TempDir()
 	writeValidTree(t, root)
 
-	agentPath := filepath.Join(root, ".ai", "agents", "planner", "AGENT.md")
 	traversalAgent := `## Role
 Owns testing.
 
@@ -162,7 +153,7 @@ Owns testing.
 ## Boundaries
 - No runtime execution
 `
-	require.NoError(t, os.WriteFile(agentPath, []byte(traversalAgent), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/agents/planner/AGENT.md", []byte(traversalAgent), 0o644))
 
 	findings, err := Run(root)
 	require.NoError(t, err)

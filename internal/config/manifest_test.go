@@ -3,29 +3,26 @@ package config
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLoad_ValidManifest(t *testing.T) {
 	root := t.TempDir()
-	aiDir := filepath.Join(root, ".ai")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
 
 	manifestYAML := `version: "2.0"
 project:
   name: ares
   description: AI Repository Standard
-  repository: https://github.com/ars-standard/ars
+  repository: https://github.com/okfriansyah-moh/ares
 defaults:
   agent: architect
 `
-	require.NoError(t, os.WriteFile(filepath.Join(aiDir, "manifest.yaml"), []byte(manifestYAML), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/manifest.yaml", []byte(manifestYAML), 0o644))
 
 	got, err := Load(root)
 	require.NoError(t, err)
@@ -35,7 +32,7 @@ defaults:
 	assert.Equal(t, arslib.Project{
 		Name:        "ares",
 		Description: "AI Repository Standard",
-		Repository:  "https://github.com/ars-standard/ars",
+		Repository:  "https://github.com/okfriansyah-moh/ares",
 	}, got.Project)
 	assert.Equal(t, arslib.Defaults{Agent: "architect"}, got.Defaults)
 }
@@ -52,9 +49,7 @@ func TestLoad_MissingFile(t *testing.T) {
 
 func TestLoad_InvalidYAML(t *testing.T) {
 	root := t.TempDir()
-	aiDir := filepath.Join(root, ".ai")
-	require.NoError(t, os.MkdirAll(aiDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(aiDir, "manifest.yaml"), []byte("version: [\n"), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".ai/manifest.yaml", []byte("version: [\n"), 0o644))
 
 	_, err := Load(root)
 	require.Error(t, err)
