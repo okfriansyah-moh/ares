@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/ars-standard/ars/internal/safepath"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
 )
 
 //go:embed templates

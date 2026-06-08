@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestLoad_ValidManifest(t *testing.T) {
 project:
   name: ares
   description: AI Repository Standard
-  repository: https://github.com/ars-standard/ars
+  repository: https://github.com/okfriansyah-moh/ares
 defaults:
   agent: architect
 `
@@ -32,7 +32,7 @@ defaults:
 	assert.Equal(t, arslib.Project{
 		Name:        "ares",
 		Description: "AI Repository Standard",
-		Repository:  "https://github.com/ars-standard/ars",
+		Repository:  "https://github.com/okfriansyah-moh/ares",
 	}, got.Project)
 	assert.Equal(t, arslib.Defaults{Agent: "architect"}, got.Defaults)
 }

@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/config"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/config"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 // ErrUnknownSource is returned when the import source is not registered.

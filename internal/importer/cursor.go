@@ -2,12 +2,11 @@ package importer
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 const (
@@ -29,9 +28,6 @@ func (c *CursorImporter) Import(root string) (*arslib.Repository, error) {
 
 	entries, err := safepath.ReadDir(root, ".cursor/rules")
 	if err != nil {
-		if os.IsNotExist(err) {
-			return emptyImportedRepository("imported-project"), nil
-		}
 		return nil, fmt.Errorf("import cursor: %w", err)
 	}
 

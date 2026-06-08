@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/markdown"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/markdown"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 var requiredAgentSections = []string{
@@ -137,7 +137,14 @@ func validateSkillRef(root, agentPath, ref string) []arslib.Finding {
 	}
 
 	exists, err := safepath.Exists(root, filepath.ToSlash(rel))
-	if err != nil || !exists {
+	if err != nil {
+		return []arslib.Finding{{
+			Level:   arslib.Error,
+			Path:    agentPath,
+			Message: err.Error(),
+		}}
+	}
+	if !exists {
 		return []arslib.Finding{{
 			Level:   arslib.Error,
 			Path:    agentPath,

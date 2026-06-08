@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -107,6 +108,15 @@ func WriteFile(root, rel string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	if err := os.Rename(tmpName, path); err != nil {
+		// Windows does not replace an existing destination on rename.
+		if runtime.GOOS == "windows" {
+			if rmErr := os.Remove(path); rmErr == nil {
+				if err2 := os.Rename(tmpName, path); err2 == nil {
+					cleanup = false
+					return nil
+				}
+			}
+		}
 		return err
 	}
 	cleanup = false

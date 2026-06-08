@@ -25,13 +25,13 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 ### Go Install
 
 ```sh
-go install github.com/ars-standard/ars/cmd/ars@latest
+go install github.com/okfriansyah-moh/ares/cmd/ars@latest
 ```
 
 ### Docker
 
 ```sh
-docker run --rm -v "$(pwd):/repo" ghcr.io/ars-standard/ars:latest compose --target cursor --root /repo
+docker run --rm -v "$(pwd):/repo" ghcr.io/okfriansyah-moh/ares:latest compose --target cursor --root /repo
 ```
 
 ### Homebrew
@@ -60,27 +60,27 @@ ars compose --target cursor
 
 ## Command Reference
 
-| Command | Description |
-|---|---|
-| `ars init [--root <path>] [--force]` | Scaffold `.ai/`. |
-| `ars validate [--root <path>] [--json]` | Validate `.ai/` structure and references. |
-| `ars compose --target <target> [--root <path>]` | Generate provider artifacts from `.ai/`. |
-| `ars import <source> [--root <path>] [--overwrite]` | Import provider artifacts into `.ai/`. |
+| Command                                             | Description                               |
+| --------------------------------------------------- | ----------------------------------------- |
+| `ars init [--root <path>] [--force]`                | Scaffold `.ai/`.                          |
+| `ars validate [--root <path>] [--json]`             | Validate `.ai/` structure and references. |
+| `ars compose --target <target> [--root <path>]`     | Generate provider artifacts from `.ai/`.  |
+| `ars import <source> [--root <path>] [--overwrite]` | Import provider artifacts into `.ai/`.    |
 
 ## Provider Support
 
-| Provider | Compose target | Output |
-|---|---|---|
-| Cursor | `cursor` | `.cursor/rules/`, `.cursor/prompts/` |
-| GitHub Copilot | `copilot` | `.github/copilot-instructions.md` |
-| Claude Code | `claude` | `CLAUDE.md` |
-| OpenAI Codex | `codex` | `AGENTS.md` |
+| Provider       | Compose target | Output                               |
+| -------------- | -------------- | ------------------------------------ |
+| Cursor         | `cursor`       | `.cursor/rules/`, `.cursor/prompts/` |
+| GitHub Copilot | `copilot`      | `.github/copilot-instructions.md`    |
+| Claude Code    | `claude`       | `CLAUDE.md`                          |
+| OpenAI Codex   | `codex`        | `AGENTS.md`                          |
 
-| Provider artifact | Import source |
-|---|---|
-| `.github/copilot-instructions.md` | `github` |
-| `.cursor/rules/*.mdc` | `cursor` |
-| `CLAUDE.md` | `claude` |
+| Provider artifact                 | Import source |
+| --------------------------------- | ------------- |
+| `.github/copilot-instructions.md` | `github`      |
+| `.cursor/rules/*.mdc`             | `cursor`      |
+| `CLAUDE.md`                       | `claude`      |
 
 ## Architecture
 

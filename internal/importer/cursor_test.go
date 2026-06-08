@@ -4,12 +4,20 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/internal/compose"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/compose"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCursorImporter_MissingRulesDir(t *testing.T) {
+	root := t.TempDir()
+
+	_, err := (&CursorImporter{}).Import(root)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "import cursor")
+}
 
 func writeCursorRule(t *testing.T, root, name, content string) {
 	t.Helper()

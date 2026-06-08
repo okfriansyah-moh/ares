@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ars-standard/ars/internal/markdown"
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/markdown"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 const claudeSourceMarker = "<!-- ars:source .ai/ -->"

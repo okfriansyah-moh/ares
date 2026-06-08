@@ -3,7 +3,7 @@ package validator
 import (
 	"sort"
 
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
 // Run validates .ai/ under root and returns all findings sorted by path then level.

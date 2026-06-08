@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 
-	"github.com/ars-standard/ars/internal/safepath"
-	"github.com/ars-standard/ars/pkg/arslib"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
+	"github.com/okfriansyah-moh/ares/pkg/arslib"
 	"gopkg.in/yaml.v3"
 )
 

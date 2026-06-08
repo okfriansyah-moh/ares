@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ars-standard/ars/internal/safepath"
+	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

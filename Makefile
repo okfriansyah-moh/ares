@@ -3,7 +3,7 @@
 VERSION ?= dev
 
 build:
-	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o bin/ars ./cmd/ars
+	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o bin/ars ./cmd/ars
 
 test:
 	go test -race -count=1 ./...
@@ -23,19 +23,19 @@ docker-scan:
 
 release:
 	mkdir -p bin
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o bin/ars-linux-amd64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o bin/ars-linux-arm64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o bin/ars-darwin-amd64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o bin/ars-darwin-arm64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o bin/ars-windows-amd64.exe ./cmd/ars
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o bin/ars-linux-amd64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o bin/ars-linux-arm64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o bin/ars-darwin-amd64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o bin/ars-darwin-arm64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o bin/ars-windows-amd64.exe ./cmd/ars
 
 release-dry:
 	mkdir -p dist
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o dist/ars-linux-amd64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o dist/ars-linux-arm64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o dist/ars-darwin-amd64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o dist/ars-darwin-arm64 ./cmd/ars
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=$(VERSION)" -o dist/ars-windows-amd64.exe ./cmd/ars
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o dist/ars-linux-amd64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o dist/ars-linux-arm64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o dist/ars-darwin-amd64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o dist/ars-darwin-arm64 ./cmd/ars
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=$(VERSION)" -o dist/ars-windows-amd64.exe ./cmd/ars
 	@ls -lh dist/
 
 release-checksums:
