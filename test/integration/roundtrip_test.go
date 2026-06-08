@@ -59,6 +59,7 @@ func TestRoundTrip_CopilotComposeThenImport(t *testing.T) {
 
 	assert.Contains(t, readFile(t, importRoot, ".ai/agents/planner/AGENT.md"), "Plans implementation tasks.")
 	assert.Contains(t, readFile(t, importRoot, ".ai/instructions/repository-instructions.md"), "Keep changes scoped.")
+	assert.Contains(t, readFile(t, importRoot, ".ai/prompts/review-task.md"), "Review Task")
 }
 
 func TestRoundTrip_ClaudeComposeThenImport(t *testing.T) {
@@ -68,6 +69,18 @@ func TestRoundTrip_ClaudeComposeThenImport(t *testing.T) {
 	importRoot := t.TempDir()
 	copyFile(t, filepath.Join(source, "CLAUDE.md"), filepath.Join(importRoot, "CLAUDE.md"))
 	runARS(t, importRoot, "import", "claude", "--root", importRoot)
+
+	assert.Contains(t, readFile(t, importRoot, ".ai/agents/planner/AGENT.md"), "Plans implementation tasks.")
+	assert.Contains(t, readFile(t, importRoot, ".ai/instructions/repository-instructions.md"), "Keep changes scoped.")
+}
+
+func TestRoundTrip_CodexComposeThenImport(t *testing.T) {
+	source := sampleRepo(t)
+	runARS(t, source, "compose", "--target", "codex", "--root", source)
+
+	importRoot := t.TempDir()
+	copyFile(t, filepath.Join(source, "AGENTS.md"), filepath.Join(importRoot, "AGENTS.md"))
+	runARS(t, importRoot, "import", "codex", "--root", importRoot)
 
 	assert.Contains(t, readFile(t, importRoot, ".ai/agents/planner/AGENT.md"), "Plans implementation tasks.")
 	assert.Contains(t, readFile(t, importRoot, ".ai/instructions/repository-instructions.md"), "Keep changes scoped.")
@@ -85,7 +98,7 @@ func TestRoundTrip_AllTargets(t *testing.T) {
 	require.FileExists(t, filepath.Join(root, "CLAUDE.md"))
 	require.FileExists(t, filepath.Join(root, "AGENTS.md"))
 
-	assert.Contains(t, readFile(t, root, ".cursor/rules/repo.mdc"), "<!-- ars:source .ai/ -->")
+	assert.Contains(t, readFile(t, root, ".cursor/rules/repo.mdc"), "<!-- ars:source .ai/")
 	assert.Contains(t, readFile(t, root, ".github/copilot-instructions.md"), "Source: .ai/")
 	assert.Contains(t, readFile(t, root, "CLAUDE.md"), "<!-- ars:source .ai/ -->")
 	assert.Contains(t, readFile(t, root, "AGENTS.md"), "<!-- ars:source .ai/ -->")
@@ -127,6 +140,7 @@ defaults:
 	writeFile(t, root, ".ai/instructions/repo.md", "Keep changes scoped.\n")
 	writeFile(t, root, ".ai/agents/planner/AGENT.md", plannerAgent)
 	writeFile(t, root, ".ai/skills/task-implementation/SKILL.md", "# Task Implementation\n")
+	writeFile(t, root, ".ai/prompts/review-task.md", "# Review Task\n")
 	return root
 }
 

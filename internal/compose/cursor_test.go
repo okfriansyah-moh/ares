@@ -22,10 +22,12 @@ func TestCursorComposer_BasicOutput(t *testing.T) {
 		},
 		Instructions: []arslib.Instruction{{
 			ID:      "repo-rules",
+			Path:    ".ai/instructions/repo-rules.md",
 			Content: "## Scope\nRepository rules.\n",
 		}},
 		Agents: []arslib.Agent{{
 			ID:      "planner",
+			Path:    ".ai/agents/planner/AGENT.md",
 			Content: "## Role\nPlans work.\n",
 		}},
 	}
@@ -40,14 +42,27 @@ func TestCursorComposer_BasicOutput(t *testing.T) {
 
 	ruleData, err := safepath.ReadFile(root, ".cursor/rules/repo-rules.mdc")
 	require.NoError(t, err)
-	assert.Contains(t, string(ruleData), "type: always")
+	assert.Contains(t, string(ruleData), "alwaysApply: true")
+	assert.Contains(t, string(ruleData), "arsType: instruction")
 	assert.Contains(t, string(ruleData), "<!-- project: demo -->")
+	assert.Contains(t, string(ruleData), "<!-- ars:source .ai/instructions/repo-rules.md -->")
 	assert.Contains(t, string(ruleData), "Repository rules.")
 
 	agentData, err := safepath.ReadFile(root, ".cursor/rules/planner.mdc")
 	require.NoError(t, err)
-	assert.Contains(t, string(agentData), "type: agent-requested")
+	assert.Contains(t, string(agentData), "alwaysApply: false")
+	assert.Contains(t, string(agentData), "arsType: agent")
+	assert.Contains(t, string(agentData), "<!-- ars:source .ai/agents/planner/AGENT.md -->")
 	assert.Contains(t, string(agentData), "Plans work.")
+
+	subagentData, err := safepath.ReadFile(root, ".cursor/agents/planner.md")
+	require.NoError(t, err)
+	assert.Contains(t, string(subagentData), "name: planner")
+	assert.Contains(t, string(subagentData), "model: inherit")
+	assert.Contains(t, string(subagentData), "description: Plans work.")
+	assert.Contains(t, string(subagentData), "## Operating Policy")
+	assert.Contains(t, string(subagentData), "## Tooling Policy")
+	assert.Contains(t, string(subagentData), "## Output Contract")
 }
 
 func TestCursorComposer_SkillInlined(t *testing.T) {
@@ -56,11 +71,13 @@ func TestCursorComposer_SkillInlined(t *testing.T) {
 		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
 		Agents: []arslib.Agent{{
 			ID:        "architect",
+			Path:      ".ai/agents/architect/AGENT.md",
 			Content:   "## Role\nOwns architecture.\n",
-			SkillRefs: []string{"skills/architecture-management/SKILL.md"},
+			SkillRefs: []string{"`skills/architecture-management/SKILL.md`"},
 		}},
 		Skills: []arslib.Skill{{
 			ID:      "architecture-management",
+			Path:    ".ai/skills/architecture-management/SKILL.md",
 			Content: "## Skill\nArchitecture guidance.\n",
 		}},
 	}
@@ -72,6 +89,17 @@ func TestCursorComposer_SkillInlined(t *testing.T) {
 	body := string(data)
 	assert.Contains(t, body, "Architecture guidance.")
 	assert.Contains(t, body, "### Context: architecture-management")
+	assert.Contains(t, body, "<!-- ars:source .ai/skills/architecture-management/SKILL.md -->")
+
+	skillData, err := safepath.ReadFile(root, ".cursor/skills/architecture-management/SKILL.md")
+	require.NoError(t, err)
+	assert.Contains(t, string(skillData), "<!-- ars:source .ai/skills/architecture-management/SKILL.md -->")
+	assert.Contains(t, string(skillData), "Architecture guidance.")
+
+	subagentData, err := safepath.ReadFile(root, ".cursor/agents/architect.md")
+	require.NoError(t, err)
+	assert.Contains(t, string(subagentData), "### Skill Context: architecture-management")
+	assert.Contains(t, string(subagentData), "Prefer read-first workflow")
 }
 
 func TestCursorComposer_NoPrompts(t *testing.T) {
@@ -80,6 +108,7 @@ func TestCursorComposer_NoPrompts(t *testing.T) {
 		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
 		Instructions: []arslib.Instruction{{
 			ID:      "repo-rules",
+			Path:    ".ai/instructions/repo-rules.md",
 			Content: "rules",
 		}},
 	}
@@ -93,6 +122,14 @@ func TestCursorComposer_NoPrompts(t *testing.T) {
 	entries, err := safepath.ReadDir(root, ".cursor/prompts")
 	require.NoError(t, err)
 	assert.Empty(t, entries)
+
+	skillEntries, err := safepath.ReadDir(root, ".cursor/skills")
+	require.NoError(t, err)
+	assert.Empty(t, skillEntries)
+
+	agentEntries, err := safepath.ReadDir(root, ".cursor/agents")
+	require.NoError(t, err)
+	assert.Empty(t, agentEntries)
 }
 
 func TestCursorComposer_Idempotent(t *testing.T) {
@@ -101,14 +138,17 @@ func TestCursorComposer_Idempotent(t *testing.T) {
 		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
 		Instructions: []arslib.Instruction{{
 			ID:      "repo-rules",
+			Path:    ".ai/instructions/repo-rules.md",
 			Content: "rules",
 		}},
 		Agents: []arslib.Agent{{
 			ID:      "planner",
+			Path:    ".ai/agents/planner/AGENT.md",
 			Content: "agent",
 		}},
 		Prompts: []arslib.Prompt{{
 			ID:      "plan",
+			Path:    ".ai/prompts/plan.md",
 			Content: "prompt body",
 		}},
 	}
@@ -129,6 +169,7 @@ func TestCursorComposer_PathTraversal(t *testing.T) {
 		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
 		Agents: []arslib.Agent{{
 			ID:      "../evil",
+			Path:    ".ai/agents/evil/AGENT.md",
 			Content: "malicious",
 		}},
 	}
@@ -152,7 +193,7 @@ func TestCompose_UnknownTarget(t *testing.T) {
 }
 
 func TestCursorRuleHeader(t *testing.T) {
-	assert.Equal(t, "---\ntype: always\n---\n", cursorRuleHeader("always"))
+	assert.Equal(t, "---\ndescription: \"repo\"\nalwaysApply: true\narsType: instruction\n---\n", cursorRuleHeader(true, "repo", "instruction"))
 }
 
 func treeChecksum(t *testing.T, root, relDir string) string {

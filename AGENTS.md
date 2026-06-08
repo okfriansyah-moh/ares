@@ -1,70 +1,191 @@
-# AGENTS.md - Codex Instructions for ARES
+<!-- ars:source .ai/ -->
+# ares
 
-## Repository Purpose
+## Repository Instructions
 
-ARES is the reference implementation of ARS, the AI Repository Standard. It provides the `ars` CLI, a single static Go binary that makes repository knowledge portable across AI coding tools by treating `.ai/` as the canonical knowledge layer and composing provider-specific artifacts such as `.cursor/`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `AGENTS.md`.
+<!-- ars:source .ai/instructions/architecture.md -->
+# Repository Knowledge Architecture
 
-ARES is a repository knowledge standard and CLI tool. It is not an agent runtime, provider router, workflow engine, memory system, marketplace, API layer, database-backed app, web app, or TUI.
+## Purpose
+Define the structure and ownership model of `.ai/`.
+See `mission.md` for the problem statement, product scope, and portability rationale.
 
-## Knowledge Hierarchy
+## Principles
+- Markdown is the source of truth. `manifest.yaml` is the only required configuration file.
+- Prefer convention over configuration. Choose obvious file names and locations over extra metadata.
+- Keep file count low and information density high.
+- A single opened file should explain its topic without requiring a chain of lookups.
 
-When instructions conflict, follow this order:
+## Structure
+- `manifest.yaml` stores minimal repository identity and defaults.
+- `instructions/` holds repository-wide guidance.
+- `agents/<name>/AGENT.md` defines a thin role and points to the skills it uses.
+- `skills/<name>/SKILL.md` is the authoritative source for reusable knowledge.
+- `prompts/` contains reusable prompts that invoke skills without duplicating them.
 
-1. `docs/architecture.md` - architectural source of truth and scope boundaries.
-2. `docs/PLAN.md` - implementation task order, acceptance criteria, and validation commands.
-3. `.ai/instructions/` - repository-wide durable guidance.
-4. `.ai/agents/` - role boundaries and skill references.
-5. `.ai/skills/` - reusable methods, checklists, and expectations.
-6. `.ai/prompts/` - reusable task templates.
-7. Existing code and tests - current implementation patterns.
+## Ownership
+- `instructions/` own repository-level rules and ARES-specific guidance.
+- `agents/` own role boundaries and skill references.
+- `skills/` own reusable methods, checklists, and output expectations.
+- `prompts/` own reusable request templates.
 
-Before architecture, planning, implementation, review, or documentation decisions, consult the relevant files above. Do not redesign architecture or expand scope unless explicitly requested.
+## Change Rules
+- Put durable knowledge in the narrowest file that owns it.
+- Prefer updating an existing file over creating a new one.
+- Add `references/` under a skill only when it removes real duplication.
+- Keep agents thin, skills universal, and prompts reusable.
 
-## Implementation Rules
+<!-- ars:source .ai/instructions/contribution-guidelines.md -->
+# Contribution Guidelines
 
-- Follow `docs/PLAN.md` one task at a time; do not implement future tasks opportunistically.
-- Prefer the existing Go package boundaries: `cmd/` for CLI adapters, `internal/` for implementation packages, `pkg/arslib` for public domain types.
-- Keep `cmd/ars` thin: parse flags, call internal packages, format output, return errors.
-- Keep operations local and file-based. No database, frontend, network calls, provider APIs, runtime orchestration, or plugin system in v1.
-- Preserve deterministic output: sort file walks and make compose/import output idempotent.
-- Prefer simple, explicit implementations. Apply KISS, YAGNI, DRY, and narrow interfaces.
-- Avoid speculative abstractions and global mutable state.
-- Do not add placeholders, TODOs, filler text, or duplicated guidance.
-- After Task 13, all file I/O must go through `internal/safepath`; direct `os.ReadFile`, `os.WriteFile`, and `filepath.WalkDir` are forbidden outside that package.
-- Do not call `os.Exit` outside `main`/Cobra process handling.
-- Do not use `fmt.Println` in non-`cmd/` packages; return errors or use appropriate logging.
-- Treat generated provider artifacts as derived from `.ai/`; durable repository knowledge belongs in `.ai/`.
+## How To Change `.ai/`
+1. Find the file that already owns the knowledge.
+2. Update that file directly.
+3. Prefer refining existing guidance over adding new files.
+4. Keep the result concise enough to scan quickly.
 
-## Testing Rules
+## Ownership Rules
+- `instructions/mission.md` owns ARES-specific purpose, scope, and portability rationale.
+- `instructions/architecture.md` owns `.ai/` structure and file ownership.
+- `instructions/` owns repository-wide rules.
+- `skills/` own reusable methods, checklists, and output expectations.
+- `agents/` define roles, boundaries, and skill references.
+- `prompts/` provide reusable request templates and should stay lean.
 
-After each implementation task, run:
+## Quality Bar
+- No placeholders, TODOs, or filler text.
+- No provider-specific wording unless a file is explicitly provider-specific.
+- No duplicated guidance across instructions, agents, skills, and prompts.
+- No metadata files unless they provide clear value that markdown cannot.
 
-```sh
-go build ./...
-go vet ./...
-staticcheck ./...
-go test -race -count=1 ./...
-govulncheck ./...
-```
+## Review Checklist
+- Is this the smallest useful change?
+- Can a human understand the topic from this one file?
+- Does the guidance stay tool-agnostic?
+- Is any repeated text better replaced by a skill reference?
 
-Use focused tests for the changed package and broaden to `./...` before finishing. For CLI behavior, include integration-style tests around Cobra execution and temporary repositories. For security-sensitive file work, test path traversal, symlink rejection, atomic writes, and deterministic ordering.
+<!-- ars:source .ai/instructions/mission.md -->
+# ARES Mission
 
-Validation must finish with zero build errors, vet issues, staticcheck issues, test failures, data races, and vulnerability findings unless the user explicitly narrows the task and the limitation is reported.
+## Purpose
+ARES is the reference implementation of ARS, the AI Repository Standard.
+Its job is to make repository knowledge portable across AI coding tools by treating `.ai/` as the canonical source of truth.
 
-## Review Rules
+## The Problem
+Repository knowledge is currently scattered across provider-specific conventions such as `.github/`, `.cursor/`, `CLAUDE.md`, `AGENTS.md`, and similar tool-owned files.
+That fragmentation creates repository chaos.
+When a team moves from Copilot to Cursor, Cursor to Claude, or Claude to Codex, they often have to rewrite repository conventions instead of carrying intent forward.
 
-- Review against `docs/architecture.md` first, then `docs/PLAN.md`.
-- Lead with correctness, security, behavioral regressions, missing tests, and scope drift.
-- Confirm changes are the smallest useful change and remain tool-agnostic unless the target file is provider-specific.
-- Check `.ai/` ownership: durable knowledge in the narrowest owning file, agents thin, skills reusable, prompts lean.
-- Check generated artifacts are traceable to `.ai/`, deterministic, overwrite-safe, and free of orphaned output.
-- For imports, check classification heuristics are transparent and shared instead of duplicated.
-- For path handling, check root escape prevention, symlink handling, and atomic writes.
+## Why `.ai/` Exists
+`.ai/` exists to give the repository one human-first, AI-readable, git-friendly, provider-agnostic knowledge layer.
+The repository should express its durable knowledge once in markdown-first source files.
+Provider-specific artifacts are derived from that source, not treated as independent systems of record.
 
-## Release Rules
+## What Belongs In `.ai/`
+`.ai/` contains the portable knowledge that should survive provider changes:
+- `manifest.yaml` for minimal repository identity and defaults
+- `instructions/` for repository-wide guidance
+- `agents/` for thin role definitions
+- `skills/` for reusable knowledge
+- `prompts/` for reusable task templates
 
-- Build the release binary with `CGO_ENABLED=0`, `-trimpath`, and stripped symbols.
-- Container releases use a two-stage build and `gcr.io/distroless/static-debian12:nonroot`; the final image must have no shell, no package manager, and run as `nonroot:nonroot`.
-- Run `govulncheck ./...` before every release; zero findings are required.
-- Release artifacts should include cross-platform binaries, immutable version tags, a mutable `latest` container tag, checksums, signatures, and an SBOM.
-- Release workflows must verify `ars --version`, container startup, static linking, and non-root execution.
+These categories are in scope because they already recur across Cursor, Copilot, Claude, Codex, and related tools, but today appear under inconsistent conventions.
+
+## What ARS Owns
+ARS owns repository knowledge:
+- Repository instructions
+- Repository agents
+- Repository skills
+- Repository prompts
+- The mapping from canonical `.ai/` knowledge to provider conventions
+
+## What ARS Does Not Own
+ARS does not own:
+- Model selection
+- Provider routing
+- Agent execution
+- Inference
+- Billing
+- API keys
+- Token usage
+- Workflow runtime or orchestration
+- Memory systems
+- Shared registries or marketplaces
+
+ARES should feel closer to OpenAPI or Terraform than to an agent runtime.
+The standard is the product. Tooling exists to support the standard, not replace it.
+
+## Portability Goal
+The success case is straightforward:
+repository knowledge can move into `.ai/`, remain understandable there, and be composed into provider conventions for Cursor, Copilot, Claude, Codex, and future tools without losing intent.
+
+In practical terms, teams should be able to:
+- import provider-owned repository knowledge into `.ai/`
+- edit `.ai/` as the canonical layer
+- compose provider-specific artifacts from the same source
+
+## Scope Discipline
+ARES should stay focused on the repository knowledge layer.
+If it grows into a runtime, orchestration engine, marketplace, or execution framework, it stops solving the fragmentation problem that motivated ARS in the first place.
+
+## Codex Skills
+
+- .agents/skills/architecture-management/SKILL.md
+- .agents/skills/plan-management/SKILL.md
+- .agents/skills/task-implementation/SKILL.md
+- .agents/skills/task-review/SKILL.md
+
+## architect
+
+<!-- ars:source .ai/agents/architect/AGENT.md -->
+# Architect Agent
+
+## Role
+Own repository and system architecture decisions.
+
+## Responsibilities
+- Create or update architecture documents.
+- Review structure, boundaries, dependencies, and drift.
+- Write or update ADRs for material decisions.
+- Surface tradeoffs before recommending complexity.
+
+## Uses
+- `.ai/skills/architecture-management/SKILL.md`
+
+## Boundaries
+- Do not make detailed implementation plans unless architecture is already settled.
+- Do not duplicate skill guidance in this file.
+
+### Skills
+- .agents/skills/architecture-management/SKILL.md
+
+### Subagent
+- .codex/agents/architect.toml
+
+## planner
+
+<!-- ars:source .ai/agents/planner/AGENT.md -->
+# Planner Agent
+
+## Role
+Turn approved requirements into sequenced implementation plans.
+
+## Responsibilities
+- Create task-based plans from specs or requests.
+- Review plans for scope, order, and executability.
+- Update plans without breaking existing numbering or flow.
+- Flag architectural gaps that need escalation.
+
+## Uses
+- `.ai/skills/plan-management/SKILL.md`
+
+## Boundaries
+- Do not make architectural decisions that belong to the Architect.
+- Do not duplicate skill guidance in this file.
+
+### Skills
+- .agents/skills/plan-management/SKILL.md
+
+### Subagent
+- .codex/agents/planner.toml
+

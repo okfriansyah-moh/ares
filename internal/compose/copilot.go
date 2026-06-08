@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/okfriansyah-moh/ares/internal/markdown"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
@@ -23,12 +24,114 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	if repo == nil {
 		return fmt.Errorf("compose copilot: repository is nil")
 	}
+	if err := validateAgentIDs(root, repo.Agents); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
 
 	if _, err := safepath.Join(root, ".github", "copilot-instructions.md"); err != nil {
 		return fmt.Errorf("compose copilot: %w", err)
 	}
 
-	content := buildCopilotOutput(repo)
+	if err := safepath.MkdirAll(root, ".github", 0o755); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := resetDir(root, ".github/instructions"); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := resetDir(root, ".github/skills"); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := resetDir(root, ".github/prompts"); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := resetDir(root, ".github/agents"); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := safepath.MkdirAll(root, ".github/instructions", 0o755); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := safepath.MkdirAll(root, ".github/skills", 0o755); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := safepath.MkdirAll(root, ".github/prompts", 0o755); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+	if err := safepath.MkdirAll(root, ".github/agents", 0o755); err != nil {
+		return fmt.Errorf("compose copilot: %w", err)
+	}
+
+	instructions := append([]arslib.Instruction(nil), repo.Instructions...)
+	sort.Slice(instructions, func(i, j int) bool {
+		return instructions[i].ID < instructions[j].ID
+	})
+	for _, inst := range instructions {
+		name := normalizeCopilotName(inst.ID)
+		rel := filepath.ToSlash(filepath.Join(".github", "instructions", name+".instructions.md"))
+		content := fmt.Sprintf("---\napplyTo: \"**\"\n---\n\n%s%s", sourceMarker(inst.Path), ensureTrailingNewline(inst.Content))
+		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("compose copilot: %w", err)
+		}
+	}
+
+	skills := append([]arslib.Skill(nil), repo.Skills...)
+	sort.Slice(skills, func(i, j int) bool {
+		return skills[i].ID < skills[j].ID
+	})
+	skillByID := indexSkills(skills)
+	for _, skill := range skills {
+		name := normalizeCopilotName(skill.ID)
+		dirRel := filepath.ToSlash(filepath.Join(".github", "skills", name))
+		if err := safepath.MkdirAll(root, dirRel, 0o755); err != nil {
+			return fmt.Errorf("compose copilot: %w", err)
+		}
+		fileRel := filepath.ToSlash(filepath.Join(dirRel, "SKILL.md"))
+		content := fmt.Sprintf("---\nname: %s\ndescription: %s\n---\n\n%s%s",
+			name,
+			tomlBasicString(copilotSkillDescription(skill)),
+			sourceMarker(skill.Path),
+			ensureTrailingNewline(skill.Content),
+		)
+		if err := safepath.WriteFile(root, fileRel, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("compose copilot: %w", err)
+		}
+	}
+
+	prompts := append([]arslib.Prompt(nil), repo.Prompts...)
+	sort.Slice(prompts, func(i, j int) bool {
+		return prompts[i].ID < prompts[j].ID
+	})
+	for _, prompt := range prompts {
+		name := normalizeCopilotName(prompt.ID)
+		rel := filepath.ToSlash(filepath.Join(".github", "prompts", name+".prompt.md"))
+		content := fmt.Sprintf("---\nmode: ask\ndescription: %s\n---\n\n%s%s",
+			tomlBasicString(fmt.Sprintf("Reusable prompt template for %s tasks.", name)),
+			sourceMarker(prompt.Path),
+			ensureTrailingNewline(prompt.Content),
+		)
+		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("compose copilot: %w", err)
+		}
+	}
+
+	agents := append([]arslib.Agent(nil), repo.Agents...)
+	sort.Slice(agents, func(i, j int) bool {
+		return agents[i].ID < agents[j].ID
+	})
+	for _, agent := range agents {
+		name := normalizeCopilotName(agent.ID)
+		rel := filepath.ToSlash(filepath.Join(".github", "agents", name+".agent.md"))
+		content := fmt.Sprintf("---\nname: %s\ndescription: %s\ntarget: github-copilot\n---\n\n%s%s",
+			name,
+			tomlBasicString(subagentDescription(agent.Content, name)),
+			sourceMarker(agent.Path),
+			buildAgentRule(agent, skillByID),
+		)
+		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("compose copilot: %w", err)
+		}
+	}
+
+	content := buildCopilotOutput(repo, skillByID)
 	rel := filepath.ToSlash(filepath.Join(".github", "copilot-instructions.md"))
 	if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("compose copilot: %w", err)
@@ -37,7 +140,7 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	return nil
 }
 
-func buildCopilotOutput(repo *arslib.Repository) string {
+func buildCopilotOutput(repo *arslib.Repository, skillByID map[string]arslib.Skill) string {
 	var b strings.Builder
 	b.WriteString(copilotGeneratedHeader)
 	b.WriteString("\n# ")
@@ -52,6 +155,7 @@ func buildCopilotOutput(repo *arslib.Repository) string {
 	if len(instructions) > 0 {
 		b.WriteString("## Repository Instructions\n\n")
 		for _, inst := range instructions {
+			b.WriteString(sourceMarker(inst.Path))
 			b.WriteString(inst.Content)
 			if !strings.HasSuffix(inst.Content, "\n") {
 				b.WriteByte('\n')
@@ -60,7 +164,13 @@ func buildCopilotOutput(repo *arslib.Repository) string {
 		}
 	}
 
-	skillByID := indexSkills(repo.Skills)
+	b.WriteString("## GitHub Copilot Files\n\n")
+	b.WriteString("- .github/copilot-instructions.md\n")
+	b.WriteString("- .github/instructions/*.instructions.md\n")
+	b.WriteString("- .github/skills/*/SKILL.md\n")
+	b.WriteString("- .github/prompts/*.prompt.md\n")
+	b.WriteString("- .github/agents/*.agent.md\n\n")
+
 	agents := append([]arslib.Agent(nil), repo.Agents...)
 	sort.Slice(agents, func(i, j int) bool {
 		return agents[i].ID < agents[j].ID
@@ -79,6 +189,55 @@ func copilotAgentSection(agent arslib.Agent, skills map[string]arslib.Skill) str
 	b.WriteString("## Agent: ")
 	b.WriteString(agent.ID)
 	b.WriteString("\n\n")
+	b.WriteString(sourceMarker(agent.Path))
 	b.WriteString(buildAgentRule(agent, skills))
 	return b.String()
+}
+
+func copilotSkillDescription(skill arslib.Skill) string {
+	sections, err := markdown.ExtractSections([]byte(skill.Content))
+	if err == nil {
+		if purpose, ok := markdown.FindSection(sections, "Purpose"); ok {
+			line := strings.TrimSpace(strings.SplitN(purpose.Content, "\n", 2)[0])
+			if line != "" {
+				return trimToMax(line, 1024)
+			}
+		}
+	}
+	return trimToMax(fmt.Sprintf("Reusable workflow for %s tasks. Use when relevant.", skill.ID), 1024)
+}
+
+func normalizeCopilotName(id string) string {
+	raw := strings.ToLower(strings.TrimSpace(id))
+	if raw == "" {
+		return "item"
+	}
+
+	var b strings.Builder
+	lastDash := false
+	for _, r := range raw {
+		isAlpha := r >= 'a' && r <= 'z'
+		isDigit := r >= '0' && r <= '9'
+		if isAlpha || isDigit {
+			b.WriteRune(r)
+			lastDash = false
+			continue
+		}
+		if !lastDash {
+			b.WriteByte('-')
+			lastDash = true
+		}
+	}
+
+	name := strings.Trim(b.String(), "-")
+	if name == "" {
+		name = "item"
+	}
+	if len(name) > 64 {
+		name = strings.Trim(name[:64], "-")
+		if name == "" {
+			name = "item"
+		}
+	}
+	return name
 }

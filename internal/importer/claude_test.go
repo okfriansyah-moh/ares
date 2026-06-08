@@ -28,6 +28,9 @@ Repository rules.
 
 ## Role
 Plans work.
+
+## Uses
+- skills/plan-management/SKILL.md
 `)
 
 	repo, err := (&ClaudeImporter{}).Import(root)
@@ -37,6 +40,7 @@ Plans work.
 	require.Len(t, repo.Agents, 1)
 	assert.Equal(t, "planner", repo.Agents[0].ID)
 	assert.Contains(t, repo.Agents[0].Content, "Plans work.")
+	assert.Equal(t, []string{"skills/plan-management/SKILL.md"}, repo.Agents[0].SkillRefs)
 }
 
 func TestClaudeImporter_WithoutMarker(t *testing.T) {

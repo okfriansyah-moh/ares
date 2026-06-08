@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/okfriansyah-moh/ares/internal/markdown"
@@ -28,20 +29,268 @@ func (g *GitHubImporter) Import(root string) (*arslib.Repository, error) {
 	}
 
 	data, err := safepath.ReadFile(root, ".github/copilot-instructions.md")
+	hasCopilotInstructions := err == nil
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("import github: %w", err)
+	}
+
+	sectionsRepo := emptyImportedRepository("imported-project")
+	if hasCopilotInstructions {
+		sections, err := markdown.ExtractSections(data)
+		if err != nil {
+			return nil, fmt.Errorf("import github: %w", err)
+		}
+		projectName := inferProjectName(data, sections)
+		sectionsRepo = sectionsToRepository(sections, projectName)
+	}
+
+	repo := emptyImportedRepository(sectionsRepo.Manifest.Project.Name)
+	mergeRepository(repo, sectionsRepo)
+
+	if err := ingestGitHubInstructions(root, repo); err != nil {
+		return nil, err
+	}
+	if err := ingestGitHubSkills(root, repo); err != nil {
+		return nil, err
+	}
+	if err := ingestGitHubPrompts(root, repo); err != nil {
+		return nil, err
+	}
+	if err := ingestGitHubAgents(root, repo); err != nil {
+		return nil, err
+	}
+
+	if !hasCopilotInstructions && len(repo.Instructions) == 0 && len(repo.Agents) == 0 && len(repo.Skills) == 0 && len(repo.Prompts) == 0 {
+		return nil, fmt.Errorf("import github: copilot artifacts not found at %s", path)
+	}
+
+	sort.Slice(repo.Instructions, func(i, j int) bool { return repo.Instructions[i].ID < repo.Instructions[j].ID })
+	sort.Slice(repo.Agents, func(i, j int) bool { return repo.Agents[i].ID < repo.Agents[j].ID })
+	sort.Slice(repo.Skills, func(i, j int) bool { return repo.Skills[i].ID < repo.Skills[j].ID })
+	sort.Slice(repo.Prompts, func(i, j int) bool { return repo.Prompts[i].ID < repo.Prompts[j].ID })
+
+	return repo, nil
+}
+
+func ingestGitHubInstructions(root string, repo *arslib.Repository) error {
+	entries, err := safepath.ReadDir(root, ".github/instructions")
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("import github: copilot-instructions.md not found at %s", path)
+			return nil
 		}
-		return nil, fmt.Errorf("import github: %w", err)
+		return fmt.Errorf("import github: %w", err)
 	}
 
-	sections, err := markdown.ExtractSections(data)
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".instructions.md") {
+			continue
+		}
+		id := strings.TrimSuffix(entry.Name(), ".instructions.md")
+		rel := filepath.ToSlash(filepath.Join(".github", "instructions", entry.Name()))
+		content, err := readGitHubMarkdownBody(root, rel)
+		if err != nil {
+			return fmt.Errorf("import github: %w", err)
+		}
+		upsertInstruction(repo, arslib.Instruction{
+			ID:      id,
+			Path:    filepath.ToSlash(filepath.Join(".ai", "instructions", id+".md")),
+			Content: content,
+		})
+	}
+
+	return nil
+}
+
+func ingestGitHubSkills(root string, repo *arslib.Repository) error {
+	entries, err := safepath.ReadDir(root, ".github/skills")
 	if err != nil {
-		return nil, fmt.Errorf("import github: %w", err)
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("import github: %w", err)
 	}
 
-	projectName := inferProjectName(data, sections)
-	return sectionsToRepository(sections, projectName), nil
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		id := entry.Name()
+		rel := filepath.ToSlash(filepath.Join(".github", "skills", id, "SKILL.md"))
+		exists, err := safepath.Exists(root, rel)
+		if err != nil {
+			return fmt.Errorf("import github: %w", err)
+		}
+		if !exists {
+			continue
+		}
+		content, err := readGitHubMarkdownBody(root, rel)
+		if err != nil {
+			return fmt.Errorf("import github: %w", err)
+		}
+		upsertSkill(repo, arslib.Skill{
+			ID:      id,
+			Path:    filepath.ToSlash(filepath.Join(".ai", "skills", id, "SKILL.md")),
+			Content: content,
+		})
+	}
+
+	return nil
+}
+
+func ingestGitHubPrompts(root string, repo *arslib.Repository) error {
+	entries, err := safepath.ReadDir(root, ".github/prompts")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("import github: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".prompt.md") {
+			continue
+		}
+		id := strings.TrimSuffix(entry.Name(), ".prompt.md")
+		rel := filepath.ToSlash(filepath.Join(".github", "prompts", entry.Name()))
+		content, err := readGitHubMarkdownBody(root, rel)
+		if err != nil {
+			return fmt.Errorf("import github: %w", err)
+		}
+		upsertPrompt(repo, arslib.Prompt{
+			ID:      id,
+			Path:    filepath.ToSlash(filepath.Join(".ai", "prompts", id+".md")),
+			Content: content,
+		})
+	}
+
+	return nil
+}
+
+func ingestGitHubAgents(root string, repo *arslib.Repository) error {
+	entries, err := safepath.ReadDir(root, ".github/agents")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("import github: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".agent.md") {
+			continue
+		}
+		id := strings.TrimSuffix(entry.Name(), ".agent.md")
+		rel := filepath.ToSlash(filepath.Join(".github", "agents", entry.Name()))
+		content, err := readGitHubMarkdownBody(root, rel)
+		if err != nil {
+			return fmt.Errorf("import github: %w", err)
+		}
+		upsertAgent(repo, arslib.Agent{
+			ID:        id,
+			Path:      filepath.ToSlash(filepath.Join(".ai", "agents", id, "AGENT.md")),
+			Content:   content,
+			SkillRefs: extractSkillRefs(content),
+		})
+	}
+
+	return nil
+}
+
+func readGitHubMarkdownBody(root, rel string) (string, error) {
+	data, err := safepath.ReadFile(root, rel)
+	if err != nil {
+		return "", err
+	}
+	body := stripMarkdownFrontmatter(string(data))
+	body = strings.TrimSpace(body)
+	body = stripSourceMarker(body)
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return "", nil
+	}
+	return body, nil
+}
+
+func stripMarkdownFrontmatter(s string) string {
+	t := strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
+	if !strings.HasPrefix(t, "---\n") {
+		return s
+	}
+	rest := strings.TrimPrefix(t, "---\n")
+	idx := strings.Index(rest, "\n---\n")
+	if idx < 0 {
+		return s
+	}
+	return strings.TrimPrefix(rest[idx:], "\n---\n")
+}
+
+func stripSourceMarker(s string) string {
+	t := strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
+	if strings.HasPrefix(t, "<!-- ars:source ") {
+		if i := strings.Index(t, "-->\n"); i >= 0 {
+			return t[i+4:]
+		}
+		if i := strings.Index(t, "-->"); i >= 0 {
+			return t[i+3:]
+		}
+	}
+	return s
+}
+
+func mergeRepository(dst, src *arslib.Repository) {
+	dst.Manifest = src.Manifest
+	for _, inst := range src.Instructions {
+		upsertInstruction(dst, inst)
+	}
+	for _, skill := range src.Skills {
+		upsertSkill(dst, skill)
+	}
+	for _, prompt := range src.Prompts {
+		upsertPrompt(dst, prompt)
+	}
+	for _, agent := range src.Agents {
+		upsertAgent(dst, agent)
+	}
+}
+
+func upsertInstruction(repo *arslib.Repository, inst arslib.Instruction) {
+	for i := range repo.Instructions {
+		if repo.Instructions[i].ID == inst.ID {
+			repo.Instructions[i] = inst
+			return
+		}
+	}
+	repo.Instructions = append(repo.Instructions, inst)
+}
+
+func upsertSkill(repo *arslib.Repository, skill arslib.Skill) {
+	for i := range repo.Skills {
+		if repo.Skills[i].ID == skill.ID {
+			repo.Skills[i] = skill
+			return
+		}
+	}
+	repo.Skills = append(repo.Skills, skill)
+}
+
+func upsertPrompt(repo *arslib.Repository, prompt arslib.Prompt) {
+	for i := range repo.Prompts {
+		if repo.Prompts[i].ID == prompt.ID {
+			repo.Prompts[i] = prompt
+			return
+		}
+	}
+	repo.Prompts = append(repo.Prompts, prompt)
+}
+
+func upsertAgent(repo *arslib.Repository, agent arslib.Agent) {
+	for i := range repo.Agents {
+		if repo.Agents[i].ID == agent.ID {
+			repo.Agents[i] = agent
+			return
+		}
+	}
+	repo.Agents = append(repo.Agents, agent)
 }
 
 func inferProjectName(raw []byte, sections []markdown.Section) string {
@@ -94,9 +343,10 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 			content = mergeAgentSections(sections, i, content)
 			i = skipMergedSections(sections, i)
 			repo.Agents = append(repo.Agents, arslib.Agent{
-				ID:      id,
-				Path:    filepath.ToSlash(filepath.Join(relBase, "agents", id, "AGENT.md")),
-				Content: content,
+				ID:        id,
+				Path:      filepath.ToSlash(filepath.Join(relBase, "agents", id, "AGENT.md")),
+				Content:   content,
+				SkillRefs: extractSkillRefs(content),
 			})
 		case classSkill:
 			content = mergeSkillSections(sections, i, content)

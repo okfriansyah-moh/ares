@@ -9,6 +9,8 @@ import (
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
 
+const arsSourceMarker = "<!-- ars:source .ai/ -->\n"
+
 // composerFormat configures shared single-file markdown compose output.
 type composerFormat struct {
 	agentSection func(agent arslib.Agent, skills map[string]arslib.Skill) string
