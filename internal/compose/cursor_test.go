@@ -163,6 +163,26 @@ func TestCursorComposer_Idempotent(t *testing.T) {
 	assert.Equal(t, first, second)
 }
 
+func TestCursorComposer_PromptOmitsSourceMarker(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Prompts: []arslib.Prompt{{
+			ID:      "create-architecture",
+			Path:    ".ai/prompts/create-architecture.md",
+			Content: "# Create Architecture\n",
+		}},
+	}
+
+	require.NoError(t, (&CursorComposer{}).Compose(root, repo))
+
+	promptData, err := safepath.ReadFile(root, ".cursor/prompts/create-architecture.prompt")
+	require.NoError(t, err)
+	body := string(promptData)
+	assert.NotContains(t, body, "<!-- ars:source")
+	assert.True(t, strings.HasPrefix(body, "# Create Architecture\n"))
+}
+
 func TestCursorComposer_PathTraversal(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{

@@ -58,6 +58,7 @@ func TestCopilotComposer_HeaderPresent(t *testing.T) {
 	promptData, err := safepath.ReadFile(root, ".github/prompts/create-plan.prompt.md")
 	require.NoError(t, err)
 	assert.Contains(t, string(promptData), "mode: ask")
+	assert.NotContains(t, string(promptData), "<!-- ars:source")
 
 	agentData, err := safepath.ReadFile(root, ".github/agents/planner.agent.md")
 	require.NoError(t, err)

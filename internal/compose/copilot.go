@@ -115,9 +115,8 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 			return err
 		}
 		rel := filepath.ToSlash(filepath.Join(".github", "prompts", name+".prompt.md"))
-		content := fmt.Sprintf("---\nmode: ask\ndescription: %s\n---\n\n%s%s",
+		content := fmt.Sprintf("---\nmode: ask\ndescription: %s\n---\n\n%s",
 			tomlBasicString(fmt.Sprintf("Reusable prompt template for %s tasks.", name)),
-			sourceMarker(prompt.Path),
 			ensureTrailingNewline(prompt.Content),
 		)
 		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {

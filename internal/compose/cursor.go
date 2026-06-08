@@ -96,7 +96,7 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 	for _, prompt := range prompts {
 		name := sanitizeRuleName(prompt.ID)
 		rel := filepath.ToSlash(filepath.Join(".cursor", "prompts", name+".prompt"))
-		content := sourceMarker(prompt.Path) + prompt.Content
+		content := prompt.Content
 		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("compose cursor: %w", err)
 		}
