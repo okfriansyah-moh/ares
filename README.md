@@ -2,6 +2,8 @@
 
 ARES is the reference implementation of ARS, the AI Repository Standard.
 
+![ARES Infographic](assets/ares-infographic.png)
+
 It lets a repository define durable AI coding knowledge once in `.ai/`, then generate provider-specific files for Cursor, GitHub Copilot, Claude Code, and OpenAI Codex.
 
 The golden rule: delete generated provider files, run `ars compose`, and everything comes back from `.ai/`.
