@@ -43,8 +43,12 @@ func (c *ClaudeComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 
 	skillNameByID := map[string]string{}
+	seenSkillDirs := map[string]string{}
 	for _, skill := range skills {
 		skillDir := normalizeClaudeSkillName(skill.ID)
+		if err := detectNormalizedCollision(seenSkillDirs, skillDir, skill.ID, "claude", "skill"); err != nil {
+			return err
+		}
 		skillNameByID[skill.ID] = skillDir
 
 		skillPath := filepath.ToSlash(filepath.Join(".claude", "skills", skillDir, "SKILL.md"))

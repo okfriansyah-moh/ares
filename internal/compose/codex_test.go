@@ -127,3 +127,35 @@ func TestNormalizeCodexSkillName(t *testing.T) {
 	assert.Equal(t, "plan-management", normalizeCodexSkillName("Plan_Management"))
 	assert.Equal(t, "skill", normalizeCodexSkillName("***"))
 }
+
+func TestCodexComposer_FailsOnSkillNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{
+			{ID: "Plan_Management", Content: "first"},
+			{ID: "plan-management", Content: "second"},
+		},
+	}
+
+	err := (&CodexComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose codex: skill id")
+	assert.Contains(t, err.Error(), "normalizes to \"plan-management\"")
+}
+
+func TestCodexComposer_FailsOnAgentNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Agents: []arslib.Agent{
+			{ID: "Planner_Team", Content: "first"},
+			{ID: "planner-team", Content: "second"},
+		},
+	}
+
+	err := (&CodexComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose codex: agent id")
+	assert.Contains(t, err.Error(), "normalizes to \"planner-team\"")
+}

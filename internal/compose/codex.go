@@ -54,8 +54,12 @@ func (c *CodexComposer) Compose(root string, repo *arslib.Repository) error {
 
 	skillByID := indexSkills(skills)
 	skillDirByID := map[string]string{}
+	seenSkillDirs := map[string]string{}
 	for _, skill := range skills {
 		skillDir := normalizeCodexSkillName(skill.ID)
+		if err := detectNormalizedCollision(seenSkillDirs, skillDir, skill.ID, "codex", "skill"); err != nil {
+			return err
+		}
 		skillDirByID[skill.ID] = skillDir
 
 		skillDirRel := filepath.ToSlash(filepath.Join(".agents", "skills", skillDir))
@@ -91,9 +95,13 @@ func (c *CodexComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(agents, func(i, j int) bool {
 		return agents[i].ID < agents[j].ID
 	})
+	seenAgentNames := map[string]string{}
 
 	for _, agent := range agents {
 		name := normalizeCodexAgentName(agent.ID)
+		if err := detectNormalizedCollision(seenAgentNames, name, agent.ID, "codex", "agent"); err != nil {
+			return err
+		}
 		subagentRel := filepath.ToSlash(filepath.Join(".codex", "agents", name+".toml"))
 		subagent := buildCodexSubagent(agent, name, skillByID, skillDirByID)
 		if err := safepath.WriteFile(root, subagentRel, []byte(subagent), 0o644); err != nil {

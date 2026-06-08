@@ -123,3 +123,19 @@ func TestClaudeAgentSection_LowercaseHeading(t *testing.T) {
 	}, nil)
 	assert.Contains(t, section, "## planner\n")
 }
+
+func TestClaudeComposer_FailsOnSkillNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{
+			{ID: "claude-helper", Content: "first"},
+			{ID: "anthropic_helper", Content: "second"},
+		},
+	}
+
+	err := (&ClaudeComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose claude: skill id")
+	assert.Contains(t, err.Error(), "normalizes to \"ars-helper\"")
+}

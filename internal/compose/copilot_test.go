@@ -186,3 +186,35 @@ func TestNormalizeCopilotName(t *testing.T) {
 	assert.Equal(t, "plan-management", normalizeCopilotName("Plan_Management"))
 	assert.Equal(t, "item", normalizeCopilotName("***"))
 }
+
+func TestCopilotComposer_FailsOnInstructionNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Instructions: []arslib.Instruction{
+			{ID: "Plan_Management", Content: "one"},
+			{ID: "plan-management", Content: "two"},
+		},
+	}
+
+	err := (&CopilotComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose copilot: instruction id")
+	assert.Contains(t, err.Error(), "normalizes to \"plan-management\"")
+}
+
+func TestCopilotComposer_FailsOnSkillNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{
+			{ID: "Task_Review", Content: "first"},
+			{ID: "task-review", Content: "second"},
+		},
+	}
+
+	err := (&CopilotComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose copilot: skill id")
+	assert.Contains(t, err.Error(), "normalizes to \"task-review\"")
+}

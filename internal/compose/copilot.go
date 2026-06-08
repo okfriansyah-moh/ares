@@ -64,8 +64,12 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(instructions, func(i, j int) bool {
 		return instructions[i].ID < instructions[j].ID
 	})
+	seenInstructionNames := map[string]string{}
 	for _, inst := range instructions {
 		name := normalizeCopilotName(inst.ID)
+		if err := detectNormalizedCollision(seenInstructionNames, name, inst.ID, "copilot", "instruction"); err != nil {
+			return err
+		}
 		rel := filepath.ToSlash(filepath.Join(".github", "instructions", name+".instructions.md"))
 		content := fmt.Sprintf("---\napplyTo: \"**\"\n---\n\n%s%s", sourceMarker(inst.Path), ensureTrailingNewline(inst.Content))
 		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
@@ -78,8 +82,12 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 		return skills[i].ID < skills[j].ID
 	})
 	skillByID := indexSkills(skills)
+	seenSkillNames := map[string]string{}
 	for _, skill := range skills {
 		name := normalizeCopilotName(skill.ID)
+		if err := detectNormalizedCollision(seenSkillNames, name, skill.ID, "copilot", "skill"); err != nil {
+			return err
+		}
 		dirRel := filepath.ToSlash(filepath.Join(".github", "skills", name))
 		if err := safepath.MkdirAll(root, dirRel, 0o755); err != nil {
 			return fmt.Errorf("compose copilot: %w", err)
@@ -100,8 +108,12 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(prompts, func(i, j int) bool {
 		return prompts[i].ID < prompts[j].ID
 	})
+	seenPromptNames := map[string]string{}
 	for _, prompt := range prompts {
 		name := normalizeCopilotName(prompt.ID)
+		if err := detectNormalizedCollision(seenPromptNames, name, prompt.ID, "copilot", "prompt"); err != nil {
+			return err
+		}
 		rel := filepath.ToSlash(filepath.Join(".github", "prompts", name+".prompt.md"))
 		content := fmt.Sprintf("---\nmode: ask\ndescription: %s\n---\n\n%s%s",
 			tomlBasicString(fmt.Sprintf("Reusable prompt template for %s tasks.", name)),
@@ -117,8 +129,12 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(agents, func(i, j int) bool {
 		return agents[i].ID < agents[j].ID
 	})
+	seenAgentNames := map[string]string{}
 	for _, agent := range agents {
 		name := normalizeCopilotName(agent.ID)
+		if err := detectNormalizedCollision(seenAgentNames, name, agent.ID, "copilot", "agent"); err != nil {
+			return err
+		}
 		rel := filepath.ToSlash(filepath.Join(".github", "agents", name+".agent.md"))
 		content := fmt.Sprintf("---\nname: %s\ndescription: %s\ntarget: github-copilot\n---\n\n%s%s",
 			name,

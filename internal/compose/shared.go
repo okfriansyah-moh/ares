@@ -39,3 +39,11 @@ func validateAgentIDs(root string, agents []arslib.Agent) error {
 	}
 	return nil
 }
+
+func detectNormalizedCollision(seen map[string]string, normalized, original, target, kind string) error {
+	if prev, ok := seen[normalized]; ok && prev != original {
+		return fmt.Errorf("compose %s: %s id %q normalizes to %q which collides with %q", target, kind, original, normalized, prev)
+	}
+	seen[normalized] = original
+	return nil
+}
