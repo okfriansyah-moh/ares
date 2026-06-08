@@ -15,7 +15,7 @@ The golden rule: delete generated provider files, run `ars compose`, and everyth
 macOS and Linux, no Go required:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh | bash
+curl -fsSL https://github.com/okfriansyah-moh/ares/raw/main/install.sh | bash
 ```
 
 Then add to PATH if prompted:
