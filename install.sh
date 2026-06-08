@@ -86,7 +86,7 @@ ok "Installed ars to ${INSTALL_DIR}/${BINARY_NAME}"
 if command -v ars >/dev/null 2>&1; then
   printf '\n'
   ok "ars is already on your PATH."
-  printf '\n  Verify: %sars --version%s\n' "${BOLD}" "${RESET}"
+  printf '\n  Verify: %bars --version%b\n' "${BOLD}" "${RESET}"
 else
   printf '\n'
   case "${SHELL:-bash}" in
@@ -102,5 +102,5 @@ else
   esac
   printf '%b Add ars to your PATH:\n\n' "${YELLOW}->${RESET}"
   printf "  %s\n\n" "${PATH_CMD}"
-  printf "  Then verify: %sars --version%s\n" "${BOLD}" "${RESET}"
+  printf "  Then verify: %bars --version%b\n" "${BOLD}" "${RESET}"
 fi
