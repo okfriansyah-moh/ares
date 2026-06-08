@@ -56,7 +56,7 @@ jobs:
         run: |
           go build \
             -trimpath \
-            -ldflags="-s -w -X github.com/ars-standard/ars/internal/version.Version=${{ github.ref_name }}" \
+            -ldflags="-s -w -X github.com/okfriansyah-moh/ares/internal/version.Version=${{ github.ref_name }}" \
             -o "${{ matrix.asset }}" \
             ./cmd/ars
 
