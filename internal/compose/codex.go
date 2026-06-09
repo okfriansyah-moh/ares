@@ -137,10 +137,15 @@ prefix_rule(
 		return fmt.Errorf("compose codex: %w", err)
 	}
 
-	content := buildCodexRootOutput(repo, skillByID, skillDirByID)
-
-	if err := safepath.WriteFile(root, "AGENTS.md", []byte(content), 0o644); err != nil {
+	agentsMDExists, err := safepath.Exists(root, "AGENTS.md")
+	if err != nil {
 		return fmt.Errorf("compose codex: %w", err)
+	}
+	if !agentsMDExists {
+		content := buildCodexRootOutput(repo, skillByID, skillDirByID)
+		if err := safepath.WriteFile(root, "AGENTS.md", []byte(content), 0o644); err != nil {
+			return fmt.Errorf("compose codex: %w", err)
+		}
 	}
 
 	return nil
@@ -158,12 +163,18 @@ func buildCodexRootOutput(repo *arslib.Repository, skillByID map[string]arslib.S
 		return instructions[i].ID < instructions[j].ID
 	})
 
-	if len(instructions) > 0 {
+	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
+	for _, inst := range instructions {
+		if strings.TrimSpace(inst.Content) != "" {
+			nonEmptyInstructions = append(nonEmptyInstructions, inst)
+		}
+	}
+	if len(nonEmptyInstructions) > 0 {
 		b.WriteString("## Repository Instructions\n\n")
-		for _, inst := range instructions {
+		for _, inst := range nonEmptyInstructions {
 			b.WriteString("<!-- ars:source ")
 			b.WriteString(pathOrDefault(inst.Path, filepath.ToSlash(filepath.Join(".ai", "instructions", inst.ID+".md"))))
-			b.WriteString(" -->\n")
+			b.WriteString(" -->\n\n")
 			b.WriteString(ensureTrailingNewline(inst.Content))
 			b.WriteByte('\n')
 		}
@@ -191,7 +202,7 @@ func buildCodexRootOutput(repo *arslib.Repository, skillByID map[string]arslib.S
 
 	for _, agent := range agents {
 		b.WriteString("## ")
-		b.WriteString(strings.ToLower(agent.ID))
+		b.WriteString(agent.ID)
 		b.WriteString("\n\n")
 		b.WriteString("<!-- ars:source ")
 		b.WriteString(pathOrDefault(agent.Path, filepath.ToSlash(filepath.Join(".ai", "agents", agent.ID, "AGENT.md"))))

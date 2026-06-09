@@ -82,6 +82,24 @@ func TestCodexComposer_SourceMarker(t *testing.T) {
 	assert.Contains(t, string(rulesData), "decision = \"forbidden\"")
 }
 
+func TestCodexComposer_SkipsExistingAGENTSMD(t *testing.T) {
+	root := t.TempDir()
+
+	existing := "# Custom AGENTS.md\nDo not overwrite this.\n"
+	require.NoError(t, safepath.WriteFile(root, "AGENTS.md", []byte(existing), 0o644))
+
+	repo := &arslib.Repository{
+		Manifest:     arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Instructions: []arslib.Instruction{{ID: "rules", Content: "Some rules."}},
+	}
+
+	require.NoError(t, (&CodexComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, "AGENTS.md")
+	require.NoError(t, err)
+	assert.Equal(t, existing, string(data))
+}
+
 func TestCodexComposer_Idempotent(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{
