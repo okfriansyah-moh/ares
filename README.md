@@ -1,4 +1,13 @@
-# ARES
+# ARES — AI Repository Standard (ARS)
+
+> Portable repository knowledge for AI coding tools. One `.ai/` source → Cursor, Copilot, Claude Code, Codex.
+
+[![License](https://img.shields.io/github/license/okfriansyah-moh/ares)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/okfriansyah-moh/ares)](https://github.com/okfriansyah-moh/ares/releases/latest)
+
+**Topics:** `ai` · `ai-coding` · `repository-standard` · `cursor` · `github-copilot` · `claude-code` · `codex` · `cli` · `developer-tools` · `standards` · `portability` · `golang` · `dot-ai` · `open-source` · `specification`
+
+**Latest release:** [Download latest](https://github.com/okfriansyah-moh/ares/releases/latest) — binaries for macOS, Linux, and Windows
 
 ARES is the reference implementation of ARS, the AI Repository Standard.
 
