@@ -2,21 +2,21 @@ package arslib
 
 // Manifest is the parsed .ai/manifest.yaml.
 type Manifest struct {
-	Version  string
-	Project  Project
-	Defaults Defaults
+	Version  string   `yaml:"version"`
+	Project  Project  `yaml:"project"`
+	Defaults Defaults `yaml:"defaults,omitempty"`
 }
 
 // Project holds repository metadata from manifest.yaml.
 type Project struct {
-	Name        string
-	Description string
-	Repository  string
+	Name        string `yaml:"name"`
+	Description string `yaml:"description,omitempty"`
+	Repository  string `yaml:"repository,omitempty"`
 }
 
 // Defaults holds optional manifest defaults.
 type Defaults struct {
-	Agent string
+	Agent string `yaml:"agent,omitempty"`
 }
 
 // Repository is the in-memory representation of a .ai/ directory.

@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/okfriansyah-moh/ares/internal/safepath"
@@ -92,4 +93,25 @@ func TestLoad_PathTraversal(t *testing.T) {
 	_, err := safepath.Join(root, "..", "..", "etc", "passwd")
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, safepath.ErrPathEscape))
+}
+
+func TestWrite_OmitsEmptyOptionalFields(t *testing.T) {
+	root := t.TempDir()
+	m := &arslib.Manifest{
+		Version: "2.0",
+		Project: arslib.Project{Name: "imported-project"},
+	}
+
+	require.NoError(t, Write(root, m))
+
+	data, err := safepath.ReadFile(root, ".ai/manifest.yaml")
+	require.NoError(t, err)
+	body := string(data)
+
+	assert.Contains(t, body, "version: \"2.0\"")
+	assert.Contains(t, body, "name: imported-project")
+	assert.NotContains(t, body, "description:")
+	assert.NotContains(t, body, "repository:")
+	assert.False(t, strings.Contains(body, "defaults:"))
+	assert.False(t, strings.Contains(body, "agent:"))
 }
