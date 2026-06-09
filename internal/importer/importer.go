@@ -127,6 +127,18 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 		} else {
 			conflicts++
 		}
+		for _, ef := range skill.ExtraFiles {
+			efRel := filepath.ToSlash(filepath.Join(".ai", "skills", skill.ID, ef.Rel))
+			ok, err := writeIfAllowed(root, efRel, ef.Content, overwrite)
+			if err != nil {
+				return created, conflicts, err
+			}
+			if ok {
+				created++
+			} else {
+				conflicts++
+			}
+		}
 	}
 
 	prompts := append([]arslib.Prompt(nil), repo.Prompts...)

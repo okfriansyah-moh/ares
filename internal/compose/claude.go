@@ -65,6 +65,16 @@ func (c *ClaudeComposer) Compose(root string, repo *arslib.Repository) error {
 		if err := safepath.WriteFile(root, skillPath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("compose claude: %w", err)
 		}
+
+		for _, ef := range skill.ExtraFiles {
+			efRel := filepath.ToSlash(filepath.Join(".claude", "skills", skillDir, ef.Rel))
+			if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Dir(efRel)), 0o755); err != nil {
+				return fmt.Errorf("compose claude: %w", err)
+			}
+			if err := safepath.WriteFile(root, efRel, ef.Content, 0o644); err != nil {
+				return fmt.Errorf("compose claude: %w", err)
+			}
+		}
 	}
 
 	content := buildClaudeRootOutput(repo, skillNameByID)

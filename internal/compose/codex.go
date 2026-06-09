@@ -78,6 +78,16 @@ func (c *CodexComposer) Compose(root string, repo *arslib.Repository) error {
 			return fmt.Errorf("compose codex: %w", err)
 		}
 
+		for _, ef := range skill.ExtraFiles {
+			efRel := filepath.ToSlash(filepath.Join(skillDirRel, ef.Rel))
+			if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Dir(efRel)), 0o755); err != nil {
+				return fmt.Errorf("compose codex: %w", err)
+			}
+			if err := safepath.WriteFile(root, efRel, ef.Content, 0o644); err != nil {
+				return fmt.Errorf("compose codex: %w", err)
+			}
+		}
+
 		openAIYamlRel := filepath.ToSlash(filepath.Join(skillDirRel, "agents", "openai.yaml"))
 		if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Join(skillDirRel, "agents")), 0o755); err != nil {
 			return fmt.Errorf("compose codex: %w", err)

@@ -82,6 +82,27 @@ func TestCodexComposer_SourceMarker(t *testing.T) {
 	assert.Contains(t, string(rulesData), "decision = \"forbidden\"")
 }
 
+func TestCodexComposer_SkillExtraFiles(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{{
+			ID:      "plan-management",
+			Path:    ".ai/skills/plan-management/SKILL.md",
+			Content: "# Plan Management\n\n## Purpose\nManage plans.\n",
+			ExtraFiles: []arslib.ExtraFile{
+				{Rel: "reference/reference.md", Content: []byte("# Reference\nDetailed content.\n")},
+			},
+		}},
+	}
+
+	require.NoError(t, (&CodexComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, ".agents/skills/plan-management/reference/reference.md")
+	require.NoError(t, err)
+	assert.Equal(t, "# Reference\nDetailed content.\n", string(data))
+}
+
 func TestCodexComposer_SkipsExistingAGENTSMD(t *testing.T) {
 	root := t.TempDir()
 

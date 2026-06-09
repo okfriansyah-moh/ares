@@ -43,12 +43,20 @@ type Agent struct {
 	SkillRefs []string
 }
 
+// ExtraFile is a supporting file within a skill directory (anything other than SKILL.md).
+// Rel is the path relative to the skill directory root, using forward slashes.
+type ExtraFile struct {
+	Rel     string
+	Content []byte
+}
+
 // Skill is a skill definition under skills/<id>/SKILL.md.
 type Skill struct {
 	ID         string
 	Path       string
 	Content    string
 	References []string
+	ExtraFiles []ExtraFile
 }
 
 // Prompt is a prompt template under prompts/.

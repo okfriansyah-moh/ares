@@ -127,14 +127,65 @@ func ingestGitHubSkills(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
+		extras, err := collectGitHubSkillExtraFiles(root, id)
+		if err != nil {
+			return fmt.Errorf("import github: %w", err)
+		}
 		upsertSkill(repo, arslib.Skill{
-			ID:      id,
-			Path:    filepath.ToSlash(filepath.Join(".ai", "skills", id, "SKILL.md")),
-			Content: content,
+			ID:         id,
+			Path:       filepath.ToSlash(filepath.Join(".ai", "skills", id, "SKILL.md")),
+			Content:    content,
+			ExtraFiles: extras,
 		})
 	}
 
 	return nil
+}
+
+func collectGitHubSkillExtraFiles(root, skillID string) ([]arslib.ExtraFile, error) {
+	baseRel := filepath.ToSlash(filepath.Join(".github", "skills", skillID))
+	return walkGitHubExtraFiles(root, baseRel, "")
+}
+
+func walkGitHubExtraFiles(root, baseRel, subRel string) ([]arslib.ExtraFile, error) {
+	dirRel := baseRel
+	if subRel != "" {
+		dirRel = filepath.ToSlash(filepath.Join(baseRel, subRel))
+	}
+
+	entries, err := safepath.ReadDir(root, dirRel)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var extras []arslib.ExtraFile
+	for _, entry := range entries {
+		entryRel := entry.Name()
+		if subRel != "" {
+			entryRel = filepath.ToSlash(filepath.Join(subRel, entry.Name()))
+		}
+		if entry.IsDir() {
+			subs, err := walkGitHubExtraFiles(root, baseRel, entryRel)
+			if err != nil {
+				return nil, err
+			}
+			extras = append(extras, subs...)
+		} else {
+			if subRel == "" && entry.Name() == "SKILL.md" {
+				continue
+			}
+			data, err := safepath.ReadFile(root, filepath.ToSlash(filepath.Join(baseRel, entryRel)))
+			if err != nil {
+				return nil, err
+			}
+			extras = append(extras, arslib.ExtraFile{Rel: entryRel, Content: data})
+		}
+	}
+	sort.Slice(extras, func(i, j int) bool { return extras[i].Rel < extras[j].Rel })
+	return extras, nil
 }
 
 func ingestGitHubPrompts(root string, repo *arslib.Repository) error {
