@@ -104,6 +104,9 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 		}
 
 		for _, ef := range skill.ExtraFiles {
+			if err := safepath.ValidateExtraFileRel(ef.Rel); err != nil {
+				return fmt.Errorf("compose copilot: skill %q extra file: %w", skill.ID, err)
+			}
 			efRel := filepath.ToSlash(filepath.Join(".github", "skills", name, ef.Rel))
 			if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Dir(efRel)), 0o755); err != nil {
 				return fmt.Errorf("compose copilot: %w", err)

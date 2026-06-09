@@ -13,6 +13,27 @@ import (
 // ErrPathEscape is returned when a resolved path leaves the repository root.
 var ErrPathEscape = errors.New("path escapes root")
 
+// ErrInvalidExtraFileRel is returned when an ExtraFile relative path is unsafe.
+var ErrInvalidExtraFileRel = errors.New("invalid extra file rel")
+
+// ValidateExtraFileRel returns an error if rel is not a safe relative path for
+// use as an ExtraFile.Rel value. It rejects empty strings, absolute paths, and
+// paths that contain empty, ".", or ".." segments.
+func ValidateExtraFileRel(rel string) error {
+	if strings.TrimSpace(rel) == "" {
+		return fmt.Errorf("%w: path is empty", ErrInvalidExtraFileRel)
+	}
+	if filepath.IsAbs(filepath.FromSlash(rel)) {
+		return fmt.Errorf("%w: %q is absolute", ErrInvalidExtraFileRel, rel)
+	}
+	for _, part := range strings.Split(rel, "/") {
+		if part == "" || part == "." || part == ".." {
+			return fmt.Errorf("%w: %q contains invalid segment %q", ErrInvalidExtraFileRel, rel, part)
+		}
+	}
+	return nil
+}
+
 // ErrSymlink is returned when a path resolves to a symlink.
 var ErrSymlink = errors.New("symlink rejected")
 

@@ -67,6 +67,9 @@ func (c *ClaudeComposer) Compose(root string, repo *arslib.Repository) error {
 		}
 
 		for _, ef := range skill.ExtraFiles {
+			if err := safepath.ValidateExtraFileRel(ef.Rel); err != nil {
+				return fmt.Errorf("compose claude: skill %q extra file: %w", skill.ID, err)
+			}
 			efRel := filepath.ToSlash(filepath.Join(".claude", "skills", skillDir, ef.Rel))
 			if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Dir(efRel)), 0o755); err != nil {
 				return fmt.Errorf("compose claude: %w", err)

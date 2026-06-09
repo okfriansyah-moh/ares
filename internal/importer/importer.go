@@ -128,6 +128,9 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 			conflicts++
 		}
 		for _, ef := range skill.ExtraFiles {
+			if err := safepath.ValidateExtraFileRel(ef.Rel); err != nil {
+				return created, conflicts, fmt.Errorf("importer: skill %q extra file: %w", skill.ID, err)
+			}
 			efRel := filepath.ToSlash(filepath.Join(".ai", "skills", skill.ID, ef.Rel))
 			ok, err := writeIfAllowed(root, efRel, ef.Content, overwrite)
 			if err != nil {
