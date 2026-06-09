@@ -205,6 +205,27 @@ func TestCopilotComposer_FailsOnInstructionNameCollision(t *testing.T) {
 	assert.Contains(t, err.Error(), "normalizes to \"plan-management\"")
 }
 
+func TestCopilotComposer_SkillExtraFiles(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{{
+			ID:      "plan-management",
+			Path:    ".ai/skills/plan-management/SKILL.md",
+			Content: "# Plan Management\n\n## Purpose\nManage plans.\n",
+			ExtraFiles: []arslib.ExtraFile{
+				{Rel: "reference/reference.md", Content: []byte("# Reference\nDetailed content.\n")},
+			},
+		}},
+	}
+
+	require.NoError(t, (&CopilotComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, ".github/skills/plan-management/reference/reference.md")
+	require.NoError(t, err)
+	assert.Equal(t, "# Reference\nDetailed content.\n", string(data))
+}
+
 func TestCopilotComposer_FailsOnSkillNameCollision(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{

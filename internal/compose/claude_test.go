@@ -124,6 +124,27 @@ func TestClaudeAgentSection_LowercaseHeading(t *testing.T) {
 	assert.Contains(t, section, "## planner\n")
 }
 
+func TestClaudeComposer_SkillExtraFiles(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{{
+			ID:      "plan-management",
+			Path:    ".ai/skills/plan-management/SKILL.md",
+			Content: "# Plan Management\n\n## Purpose\nManage plans.\n",
+			ExtraFiles: []arslib.ExtraFile{
+				{Rel: "reference/reference.md", Content: []byte("# Reference\nDetailed content.\n")},
+			},
+		}},
+	}
+
+	require.NoError(t, (&ClaudeComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, ".claude/skills/plan-management/reference/reference.md")
+	require.NoError(t, err)
+	assert.Equal(t, "# Reference\nDetailed content.\n", string(data))
+}
+
 func TestClaudeComposer_FailsOnSkillNameCollision(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{

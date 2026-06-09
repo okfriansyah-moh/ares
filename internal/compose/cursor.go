@@ -109,13 +109,26 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 
 	for _, skill := range skills {
 		name := sanitizeRuleName(skill.ID)
-		rel := filepath.ToSlash(filepath.Join(".cursor", "skills", name, "SKILL.md"))
-		content := sourceMarker(skill.Path) + skill.Content
-		if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Join(".cursor", "skills", name)), 0o755); err != nil {
+		skillDirRel := filepath.ToSlash(filepath.Join(".cursor", "skills", name))
+		if err := safepath.MkdirAll(root, skillDirRel, 0o755); err != nil {
 			return fmt.Errorf("compose cursor: %w", err)
 		}
+		rel := filepath.ToSlash(filepath.Join(skillDirRel, "SKILL.md"))
+		content := sourceMarker(skill.Path) + skill.Content
 		if err := safepath.WriteFile(root, rel, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("compose cursor: %w", err)
+		}
+		for _, ef := range skill.ExtraFiles {
+			if err := safepath.ValidateExtraFileRel(ef.Rel); err != nil {
+				return fmt.Errorf("compose cursor: skill %q extra file: %w", skill.ID, err)
+			}
+			efRel := filepath.ToSlash(filepath.Join(skillDirRel, ef.Rel))
+			if err := safepath.MkdirAll(root, filepath.ToSlash(filepath.Dir(efRel)), 0o755); err != nil {
+				return fmt.Errorf("compose cursor: %w", err)
+			}
+			if err := safepath.WriteFile(root, efRel, ef.Content, 0o644); err != nil {
+				return fmt.Errorf("compose cursor: %w", err)
+			}
 		}
 	}
 

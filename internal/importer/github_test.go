@@ -235,6 +235,55 @@ Plans implementation tasks.
 	assert.Equal(t, []string{"skills/task-implementation/SKILL.md"}, repo.Agents[0].SkillRefs)
 }
 
+func TestGitHubImporter_SkillExtraFiles(t *testing.T) {
+	root := t.TempDir()
+
+	require.NoError(t, safepath.WriteFile(root, ".github/skills/plan-management/SKILL.md", []byte(`---
+name: plan-management
+description: "Manage plans."
+---
+
+# Plan Management
+`), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".github/skills/plan-management/reference/reference.md",
+		[]byte("# Reference\nDetailed reference content.\n"), 0o644))
+
+	repo, err := (&GitHubImporter{}).Import(root)
+	require.NoError(t, err)
+
+	require.Len(t, repo.Skills, 1)
+	assert.Equal(t, "plan-management", repo.Skills[0].ID)
+	require.Len(t, repo.Skills[0].ExtraFiles, 1)
+	assert.Equal(t, "reference/reference.md", repo.Skills[0].ExtraFiles[0].Rel)
+	assert.Contains(t, string(repo.Skills[0].ExtraFiles[0].Content), "Detailed reference content.")
+}
+
+func TestWriteRepository_WritesSkillExtraFiles(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{
+			Version: "2.0",
+			Project: arslib.Project{Name: "demo"},
+		},
+		Skills: []arslib.Skill{{
+			ID:      "plan-management",
+			Content: "# Plan Management\n",
+			ExtraFiles: []arslib.ExtraFile{
+				{Rel: "reference/reference.md", Content: []byte("# Reference\n")},
+			},
+		}},
+	}
+
+	created, conflicts, err := WriteRepository(root, repo, true)
+	require.NoError(t, err)
+	assert.Equal(t, 0, conflicts)
+	assert.Equal(t, 3, created) // SKILL.md + extra file + manifest
+
+	data, err := safepath.ReadFile(root, ".ai/skills/plan-management/reference/reference.md")
+	require.NoError(t, err)
+	assert.Equal(t, "# Reference\n", string(data))
+}
+
 func TestWriteRepository_WritesPrompts(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{

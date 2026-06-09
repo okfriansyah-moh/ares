@@ -114,3 +114,27 @@ func TestWalkDir_SkipsSymlinks(t *testing.T) {
 	assert.Contains(t, seen, "real/file.txt")
 	assert.NotContains(t, seen, "linkdir/secret.txt")
 }
+
+func TestValidateExtraFileRel(t *testing.T) {
+	valid := []string{
+		"reference/reference.md",
+		"docs/guide.md",
+		"a/b/c/file.txt",
+	}
+	for _, rel := range valid {
+		assert.NoError(t, ValidateExtraFileRel(rel), "expected %q to be valid", rel)
+	}
+
+	invalid := []string{
+		"",
+		"   ",
+		"/absolute/path.md",
+		"../traversal.md",
+		"foo/../bar.md",
+		"foo/./bar.md",
+		"foo//bar.md",
+	}
+	for _, rel := range invalid {
+		assert.ErrorIs(t, ValidateExtraFileRel(rel), ErrInvalidExtraFileRel, "expected %q to be invalid", rel)
+	}
+}

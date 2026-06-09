@@ -279,14 +279,65 @@ func loadSkills(root string) ([]arslib.Skill, error) {
 		if err != nil {
 			return nil, err
 		}
+		extras, err := loadSkillExtraFiles(root, name)
+		if err != nil {
+			return nil, err
+		}
 		out = append(out, arslib.Skill{
 			ID:         name,
 			Path:       rel,
 			Content:    content,
 			References: refs,
+			ExtraFiles: extras,
 		})
 	}
 	return out, nil
+}
+
+func loadSkillExtraFiles(root, skillID string) ([]arslib.ExtraFile, error) {
+	baseRel := filepath.ToSlash(filepath.Join(".ai", "skills", skillID))
+	return walkExtraFiles(root, baseRel, "")
+}
+
+func walkExtraFiles(root, baseRel, subRel string) ([]arslib.ExtraFile, error) {
+	dirRel := baseRel
+	if subRel != "" {
+		dirRel = filepath.ToSlash(filepath.Join(baseRel, subRel))
+	}
+
+	entries, err := safepath.ReadDir(root, dirRel)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var extras []arslib.ExtraFile
+	for _, entry := range entries {
+		entryRel := entry.Name()
+		if subRel != "" {
+			entryRel = filepath.ToSlash(filepath.Join(subRel, entry.Name()))
+		}
+		if entry.IsDir() {
+			subs, err := walkExtraFiles(root, baseRel, entryRel)
+			if err != nil {
+				return nil, err
+			}
+			extras = append(extras, subs...)
+		} else {
+			if subRel == "" && entry.Name() == "SKILL.md" {
+				continue
+			}
+			data, err := safepath.ReadFile(root, filepath.ToSlash(filepath.Join(baseRel, entryRel)))
+			if err != nil {
+				return nil, err
+			}
+			extras = append(extras, arslib.ExtraFile{Rel: entryRel, Content: data})
+		}
+	}
+	sort.Slice(extras, func(i, j int) bool { return extras[i].Rel < extras[j].Rel })
+	return extras, nil
 }
 
 func loadPrompts(root string) ([]arslib.Prompt, error) {
