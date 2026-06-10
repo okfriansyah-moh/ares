@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
@@ -46,4 +47,14 @@ func detectNormalizedCollision(seen map[string]string, normalized, original, tar
 	}
 	seen[normalized] = original
 	return nil
+}
+
+func filterContentfulSkills(skills []arslib.Skill) []arslib.Skill {
+	out := make([]arslib.Skill, 0, len(skills))
+	for _, skill := range skills {
+		if content.HasBody(skill.Content) {
+			out = append(out, skill)
+		}
+	}
+	return out
 }

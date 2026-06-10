@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/markdown"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
@@ -51,6 +52,7 @@ func (c *CodexComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(skills, func(i, j int) bool {
 		return skills[i].ID < skills[j].ID
 	})
+	skills = filterContentfulSkills(skills)
 
 	skillByID := indexSkills(skills)
 	skillDirByID := map[string]string{}
@@ -111,6 +113,9 @@ func (c *CodexComposer) Compose(root string, repo *arslib.Repository) error {
 	seenAgentNames := map[string]string{}
 
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		name := normalizeCodexAgentName(agent.ID)
 		if err := detectNormalizedCollision(seenAgentNames, name, agent.ID, "codex", "agent"); err != nil {
 			return err
@@ -178,7 +183,7 @@ func buildCodexRootOutput(repo *arslib.Repository, skillByID map[string]arslib.S
 
 	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
 	for _, inst := range instructions {
-		if strings.TrimSpace(inst.Content) != "" {
+		if content.HasBody(inst.Content) {
 			nonEmptyInstructions = append(nonEmptyInstructions, inst)
 		}
 	}
@@ -214,6 +219,9 @@ func buildCodexRootOutput(repo *arslib.Repository, skillByID map[string]arslib.S
 	})
 
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		b.WriteString("## ")
 		b.WriteString(agent.ID)
 		b.WriteString("\n\n")
