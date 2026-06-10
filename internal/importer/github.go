@@ -91,6 +91,9 @@ func ingestGitHubInstructions(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
+		if !hasContentBody(content) {
+			continue
+		}
 		upsertInstruction(repo, arslib.Instruction{
 			ID:      id,
 			Path:    filepath.ToSlash(filepath.Join(".ai", "instructions", id+".md")),
@@ -126,6 +129,9 @@ func ingestGitHubSkills(root string, repo *arslib.Repository) error {
 		content, err := readGitHubMarkdownBody(root, rel)
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
+		}
+		if !hasContentBody(content) {
+			continue
 		}
 		extras, err := collectGitHubSkillExtraFiles(root, id)
 		if err != nil {
@@ -207,6 +213,9 @@ func ingestGitHubPrompts(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
+		if !hasContentBody(content) {
+			continue
+		}
 		upsertPrompt(repo, arslib.Prompt{
 			ID:      id,
 			Path:    filepath.ToSlash(filepath.Join(".ai", "prompts", id+".md")),
@@ -235,6 +244,9 @@ func ingestGitHubAgents(root string, repo *arslib.Repository) error {
 		content, err := readGitHubMarkdownBody(root, rel)
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
+		}
+		if !hasContentBody(content) {
+			continue
 		}
 		upsertAgent(repo, arslib.Agent{
 			ID:        id,
@@ -370,14 +382,18 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 			continue
 		}
 
-		id := uniqueSlug(heading, used)
 		content := cleanImportedMarkdownBody(sec.Content)
 		relBase := filepath.Join(".ai")
+		kind := ClassifySection(heading)
 
-		switch ClassifySection(heading) {
+		switch kind {
 		case classAgent:
 			content = mergeAgentSections(sections, i, content)
 			i = skipMergedSections(sections, i)
+			if !hasContentBody(content) {
+				continue
+			}
+			id := uniqueSlug(heading, used)
 			repo.Agents = append(repo.Agents, arslib.Agent{
 				ID:        id,
 				Path:      filepath.ToSlash(filepath.Join(relBase, "agents", id, "AGENT.md")),
@@ -387,12 +403,20 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 		case classSkill:
 			content = mergeSkillSections(sections, i, content)
 			i = skipMergedSections(sections, i)
+			if !hasContentBody(content) {
+				continue
+			}
+			id := uniqueSlug(heading, used)
 			repo.Skills = append(repo.Skills, arslib.Skill{
 				ID:      id,
 				Path:    filepath.ToSlash(filepath.Join(relBase, "skills", id, "SKILL.md")),
 				Content: content,
 			})
 		default:
+			if !hasContentBody(content) {
+				continue
+			}
+			id := uniqueSlug(heading, used)
 			repo.Instructions = append(repo.Instructions, arslib.Instruction{
 				ID:      id,
 				Path:    filepath.ToSlash(filepath.Join(relBase, "instructions", id+".md")),

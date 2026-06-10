@@ -83,6 +83,47 @@ func TestGitHubImporter_InstructionSections(t *testing.T) {
 	assert.Equal(t, "demo", repo.Manifest.Project.Name)
 }
 
+func TestGitHubImporter_SkipsEmptyInstructionSections(t *testing.T) {
+	root := t.TempDir()
+	writeCopilotFile(t, root, `# demo
+
+## Architecture Invariants
+
+<!-- ars:source .ai/instructions/architecture-invariants.md -->
+
+## Repository Instructions
+
+Keep changes scoped.
+`)
+
+	repo, err := (&GitHubImporter{}).Import(root)
+	require.NoError(t, err)
+	require.Len(t, repo.Instructions, 1)
+	assert.Equal(t, "repository-instructions", repo.Instructions[0].ID)
+	assert.Contains(t, repo.Instructions[0].Content, "Keep changes scoped")
+}
+
+func TestGitHubImporter_SkipsEmptyStructuredInstructions(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, safepath.WriteFile(root, ".github/instructions/architecture-invariants.instructions.md", []byte(`---
+applyTo: "**"
+---
+
+<!-- ars:source .ai/instructions/architecture-invariants.md -->
+`), 0o644))
+	require.NoError(t, safepath.WriteFile(root, ".github/instructions/repo.instructions.md", []byte(`---
+applyTo: "**"
+---
+
+Keep changes scoped.
+`), 0o644))
+
+	repo, err := (&GitHubImporter{}).Import(root)
+	require.NoError(t, err)
+	require.Len(t, repo.Instructions, 1)
+	assert.Equal(t, "repo", repo.Instructions[0].ID)
+}
+
 func TestGitHubImporter_PreservesReadableInstructionBoundaries(t *testing.T) {
 	root := t.TempDir()
 	writeCopilotFile(t, root, `# demo
@@ -183,6 +224,40 @@ func TestWriteRepository_Overwrite(t *testing.T) {
 	data, err := safepath.ReadFile(root, ".ai/instructions/rules.md")
 	require.NoError(t, err)
 	assert.Equal(t, "new content", string(data))
+}
+
+func TestWriteRepository_SkipsEmptyContentFiles(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{
+			Version: "2.0",
+			Project: arslib.Project{Name: "demo"},
+		},
+		Instructions: []arslib.Instruction{
+			{ID: "empty-instruction", Content: " \n\t"},
+			{ID: "repo", Content: "Repository rules."},
+		},
+		Agents: []arslib.Agent{
+			{ID: "empty-agent", Content: "\n"},
+		},
+		Skills: []arslib.Skill{
+			{ID: "empty-skill", Content: ""},
+		},
+		Prompts: []arslib.Prompt{
+			{ID: "empty-prompt", Content: ""},
+		},
+	}
+
+	created, conflicts, err := WriteRepository(root, repo, false)
+	require.NoError(t, err)
+	assert.Equal(t, 0, conflicts)
+	assert.Equal(t, 2, created) // non-empty instruction + manifest
+
+	require.FileExists(t, filepath.Join(root, ".ai", "instructions", "repo.md"))
+	require.NoFileExists(t, filepath.Join(root, ".ai", "instructions", "empty-instruction.md"))
+	require.NoFileExists(t, filepath.Join(root, ".ai", "agents", "empty-agent", "AGENT.md"))
+	require.NoFileExists(t, filepath.Join(root, ".ai", "skills", "empty-skill", "SKILL.md"))
+	require.NoFileExists(t, filepath.Join(root, ".ai", "prompts", "empty-prompt.md"))
 }
 
 func TestImport_UnknownSource(t *testing.T) {

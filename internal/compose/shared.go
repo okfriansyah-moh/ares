@@ -47,3 +47,7 @@ func detectNormalizedCollision(seen map[string]string, normalized, original, tar
 	seen[normalized] = original
 	return nil
 }
+
+func hasContentBody(s string) bool {
+	return strings.TrimSpace(s) != ""
+}

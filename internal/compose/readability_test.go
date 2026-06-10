@@ -45,3 +45,49 @@ func TestComposeTargetsPreserveReadableInstructionBoundaries(t *testing.T) {
 		})
 	}
 }
+
+func TestComposeTargetsSkipEmptyInstructions(t *testing.T) {
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Instructions: []arslib.Instruction{
+			{
+				ID:      "empty-rules",
+				Path:    ".ai/instructions/empty-rules.md",
+				Content: " \n\t",
+			},
+			{
+				ID:      "repo-rules",
+				Path:    ".ai/instructions/repo-rules.md",
+				Content: "Keep changes scoped.\n",
+			},
+		},
+	}
+
+	for _, target := range []string{"cursor", "copilot", "claude", "codex"} {
+		t.Run(target, func(t *testing.T) {
+			root := t.TempDir()
+			require.NoError(t, Compose(root, target, repo))
+
+			switch target {
+			case "cursor":
+				exists, err := safepath.Exists(root, ".cursor/rules/empty-rules.mdc")
+				require.NoError(t, err)
+				assert.False(t, exists)
+			case "copilot":
+				exists, err := safepath.Exists(root, ".github/instructions/empty-rules.instructions.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+			case "claude":
+				data, err := safepath.ReadFile(root, "CLAUDE.md")
+				require.NoError(t, err)
+				assert.NotContains(t, string(data), "empty-rules")
+				assert.Contains(t, string(data), "Keep changes scoped.")
+			case "codex":
+				data, err := safepath.ReadFile(root, "AGENTS.md")
+				require.NoError(t, err)
+				assert.NotContains(t, string(data), "empty-rules")
+				assert.Contains(t, string(data), "Keep changes scoped.")
+			}
+		})
+	}
+}

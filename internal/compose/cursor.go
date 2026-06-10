@@ -54,6 +54,9 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 
 	firstRule := true
 	for _, inst := range instructions {
+		if !hasContentBody(inst.Content) {
+			continue
+		}
 		name := sanitizeRuleName(inst.ID)
 		body := sourceMarker(inst.Path) + inst.Content
 		if firstRule {

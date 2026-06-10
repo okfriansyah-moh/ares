@@ -66,6 +66,9 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 	seenInstructionNames := map[string]string{}
 	for _, inst := range instructions {
+		if !hasContentBody(inst.Content) {
+			continue
+		}
 		name := normalizeCopilotName(inst.ID)
 		if err := detectNormalizedCollision(seenInstructionNames, name, inst.ID, "copilot", "instruction"); err != nil {
 			return err
@@ -180,9 +183,16 @@ func buildCopilotOutput(repo *arslib.Repository, skillByID map[string]arslib.Ski
 		return instructions[i].ID < instructions[j].ID
 	})
 
-	if len(instructions) > 0 {
+	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
+	for _, inst := range instructions {
+		if hasContentBody(inst.Content) {
+			nonEmptyInstructions = append(nonEmptyInstructions, inst)
+		}
+	}
+
+	if len(nonEmptyInstructions) > 0 {
 		b.WriteString("## Repository Instructions\n\n")
-		for _, inst := range instructions {
+		for _, inst := range nonEmptyInstructions {
 			b.WriteString(sourceMarker(inst.Path))
 			b.WriteString(inst.Content)
 			if !strings.HasSuffix(inst.Content, "\n") {

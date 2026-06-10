@@ -88,6 +88,9 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(instructions, func(i, j int) bool { return instructions[i].ID < instructions[j].ID })
 
 	for _, inst := range instructions {
+		if !hasContentBody(inst.Content) {
+			continue
+		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "instructions", inst.ID+".md"))
 		ok, err := writeIfAllowed(root, rel, []byte(inst.Content), overwrite)
 		if err != nil {
@@ -104,6 +107,9 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(agents, func(i, j int) bool { return agents[i].ID < agents[j].ID })
 
 	for _, agent := range agents {
+		if !hasContentBody(agent.Content) {
+			continue
+		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "agents", agent.ID, "AGENT.md"))
 		ok, err := writeIfAllowed(root, rel, []byte(agent.Content), overwrite)
 		if err != nil {
@@ -120,6 +126,9 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(skills, func(i, j int) bool { return skills[i].ID < skills[j].ID })
 
 	for _, skill := range skills {
+		if !hasContentBody(skill.Content) {
+			continue
+		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "skills", skill.ID, "SKILL.md"))
 		ok, err := writeIfAllowed(root, rel, []byte(skill.Content), overwrite)
 		if err != nil {
@@ -151,6 +160,9 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(prompts, func(i, j int) bool { return prompts[i].ID < prompts[j].ID })
 
 	for _, prompt := range prompts {
+		if !hasContentBody(prompt.Content) {
+			continue
+		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "prompts", prompt.ID+".md"))
 		ok, err := writeIfAllowed(root, rel, []byte(prompt.Content), overwrite)
 		if err != nil {
@@ -184,6 +196,10 @@ func cleanImportedMarkdownBody(s string) string {
 	s = strings.ReplaceAll(s, "\r", "\n")
 	s = generatedCommentLineRe.ReplaceAllString(s, "")
 	return strings.TrimSpace(s)
+}
+
+func hasContentBody(s string) bool {
+	return strings.TrimSpace(s) != ""
 }
 
 func writeIfAllowed(root, rel string, data []byte, overwrite bool) (bool, error) {

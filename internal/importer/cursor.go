@@ -51,6 +51,9 @@ func (c *CursorImporter) Import(root string) (*arslib.Repository, error) {
 
 		switch ruleType {
 		case cursorTypeAgentRequested:
+			if !hasContentBody(body) {
+				continue
+			}
 			repo.Agents = append(repo.Agents, arslib.Agent{
 				ID:        id,
 				Path:      filepath.ToSlash(filepath.Join(relBase, "agents", id, "AGENT.md")),
@@ -58,6 +61,9 @@ func (c *CursorImporter) Import(root string) (*arslib.Repository, error) {
 				SkillRefs: extractSkillRefs(body),
 			})
 		case cursorTypeAlways:
+			if !hasContentBody(body) {
+				continue
+			}
 			repo.Instructions = append(repo.Instructions, arslib.Instruction{
 				ID:      id,
 				Path:    filepath.ToSlash(filepath.Join(relBase, "instructions", id+".md")),

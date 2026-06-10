@@ -101,9 +101,16 @@ func buildClaudeRootOutput(repo *arslib.Repository, skillNameByID map[string]str
 		return instructions[i].ID < instructions[j].ID
 	})
 
-	if len(instructions) > 0 {
+	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
+	for _, inst := range instructions {
+		if hasContentBody(inst.Content) {
+			nonEmptyInstructions = append(nonEmptyInstructions, inst)
+		}
+	}
+
+	if len(nonEmptyInstructions) > 0 {
 		b.WriteString("## Repository Instructions\n\n")
-		for _, inst := range instructions {
+		for _, inst := range nonEmptyInstructions {
 			b.WriteString("<!-- ars:source ")
 			b.WriteString(pathOrDefault(inst.Path, filepath.ToSlash(filepath.Join(".ai", "instructions", inst.ID+".md"))))
 			b.WriteString(" -->\n")

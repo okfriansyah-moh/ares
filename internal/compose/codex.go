@@ -178,7 +178,7 @@ func buildCodexRootOutput(repo *arslib.Repository, skillByID map[string]arslib.S
 
 	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
 	for _, inst := range instructions {
-		if strings.TrimSpace(inst.Content) != "" {
+		if hasContentBody(inst.Content) {
 			nonEmptyInstructions = append(nonEmptyInstructions, inst)
 		}
 	}
