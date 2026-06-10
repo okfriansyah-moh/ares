@@ -47,6 +47,30 @@ func TestCursorImporter_InstructionRule(t *testing.T) {
 	assert.Equal(t, "Repository rules.", repo.Instructions[0].Content)
 }
 
+func TestCursorImporter_CleansGeneratedCommentsAndPreservesBoundaries(t *testing.T) {
+	root := t.TempDir()
+	writeCursorRule(t, root, "development-rules.mdc", `---
+description: "Repository guidance"
+alwaysApply: true
+arsType: instruction
+---
+<!-- project: demo -->
+<!-- ars:source .ai/instructions/development-rules.md -->
+Design before code - brainstorming skill
+Vertical slice per module - .github/skills/vertical-slice/SKILL.md
+`)
+
+	repo, err := (&CursorImporter{}).Import(root)
+	require.NoError(t, err)
+	require.Len(t, repo.Instructions, 1)
+
+	content := repo.Instructions[0].Content
+	assert.Contains(t, content, "skill\nVertical slice")
+	assert.NotContains(t, content, "<!-- project:")
+	assert.NotContains(t, content, "<!-- ars:source")
+	assert.NotContains(t, content, "skillVertical")
+}
+
 func TestCursorImporter_EmptyRulesDir(t *testing.T) {
 	root := t.TempDir()
 	require.NoError(t, safepath.MkdirAll(root, ".cursor/rules", 0o755))

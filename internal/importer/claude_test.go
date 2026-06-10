@@ -43,6 +43,31 @@ Plans work.
 	assert.Equal(t, []string{"skills/plan-management/SKILL.md"}, repo.Agents[0].SkillRefs)
 }
 
+func TestClaudeImporter_PreservesReadableInstructionBoundaries(t *testing.T) {
+	root := t.TempDir()
+	writeClaudeFile(t, root, `<!-- ars:source .ai/ -->
+# demo
+
+## Repository Instructions
+
+<!-- ars:source .ai/instructions/security-invariants.md -->
+API keys never in source/config/logs - CredentialRef = env var name only
+os.Getenv() only in backend/internal/platform/config/config.go and agent/internal/config/config.go
+Never log resolved credential values
+`)
+
+	repo, err := (&ClaudeImporter{}).Import(root)
+	require.NoError(t, err)
+	require.Len(t, repo.Instructions, 1)
+
+	content := repo.Instructions[0].Content
+	assert.Contains(t, content, "only\nos.Getenv")
+	assert.Contains(t, content, "config.go\nNever log")
+	assert.NotContains(t, content, "<!-- ars:source")
+	assert.NotContains(t, content, "onlyos.Getenv")
+	assert.NotContains(t, content, "config.goNever")
+}
+
 func TestClaudeImporter_WithoutMarker(t *testing.T) {
 	root := t.TempDir()
 	writeClaudeFile(t, root, `# demo

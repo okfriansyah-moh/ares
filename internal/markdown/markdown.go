@@ -1,7 +1,6 @@
 package markdown
 
 import (
-	"bytes"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -24,37 +23,51 @@ func ExtractSections(src []byte) ([]Section, error) {
 
 	doc := goldmark.DefaultParser().Parse(text.NewReader(src))
 
-	var sections []Section
-	var current *Section
-	var content bytes.Buffer
-
-	flush := func() {
-		if current == nil {
-			return
-		}
-		current.Content = strings.TrimSpace(content.String())
-		sections = append(sections, *current)
-		content.Reset()
-		current = nil
+	type heading struct {
+		text  string
+		level int
+		start int
+		end   int
 	}
 
+	var headings []heading
 	for node := doc.FirstChild(); node != nil; node = node.NextSibling() {
-		switch n := node.(type) {
-		case *ast.Heading:
-			flush()
-			current = &Section{
-				Heading: HeadingText(n, src),
-				Level:   n.Level,
-			}
-		default:
-			if current == nil {
-				current = &Section{}
-			}
-			content.Write(nodeSource(node, src))
+		h, ok := node.(*ast.Heading)
+		if !ok {
+			continue
 		}
+		start, end := headingRange(h, src)
+		headings = append(headings, heading{
+			text:  HeadingText(h, src),
+			level: h.Level,
+			start: start,
+			end:   end,
+		})
 	}
 
-	flush()
+	if len(headings) == 0 {
+		return []Section{{
+			Content: strings.TrimSpace(string(src)),
+		}}, nil
+	}
+
+	var sections []Section
+	if preface := strings.TrimSpace(string(src[:headings[0].start])); preface != "" {
+		sections = append(sections, Section{Content: preface})
+	}
+
+	for i, h := range headings {
+		contentEnd := len(src)
+		if i+1 < len(headings) {
+			contentEnd = headings[i+1].start
+		}
+		sections = append(sections, Section{
+			Heading: h.text,
+			Level:   h.level,
+			Content: strings.TrimSpace(string(src[h.end:contentEnd])),
+		})
+	}
+
 	return sections, nil
 }
 
@@ -89,31 +102,6 @@ func HeadingText(node ast.Node, src []byte) string {
 	return strings.TrimSpace(b.String())
 }
 
-func nodeSource(node ast.Node, src []byte) []byte {
-	switch node.Kind() {
-	case ast.KindText, ast.KindString, ast.KindCodeSpan, ast.KindEmphasis, ast.KindLink:
-		return nil
-	}
-
-	lines := node.Lines()
-	if lines != nil && lines.Len() > 0 {
-		var buf bytes.Buffer
-		for i := 0; i < lines.Len(); i++ {
-			seg := lines.At(i)
-			buf.Write(src[seg.Start:seg.Stop])
-		}
-		return buf.Bytes()
-	}
-	if !node.HasChildren() {
-		return nil
-	}
-	var buf bytes.Buffer
-	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
-		buf.Write(nodeSource(child, src))
-	}
-	return buf.Bytes()
-}
-
 func inlineText(node ast.Node, src []byte) string {
 	switch n := node.(type) {
 	case *ast.Text:
@@ -142,4 +130,44 @@ func inlineText(node ast.Node, src []byte) string {
 		}
 		return b.String()
 	}
+}
+
+func headingRange(node *ast.Heading, src []byte) (start int, end int) {
+	lines := node.Lines()
+	if lines == nil || lines.Len() == 0 {
+		return 0, 0
+	}
+
+	first := lines.At(0)
+	last := lines.At(lines.Len() - 1)
+	return lineStart(src, first.Start), lineEnd(src, last.Stop)
+}
+
+func lineStart(src []byte, pos int) int {
+	if pos < 0 {
+		return 0
+	}
+	if pos > len(src) {
+		pos = len(src)
+	}
+	for pos > 0 && src[pos-1] != '\n' {
+		pos--
+	}
+	return pos
+}
+
+func lineEnd(src []byte, pos int) int {
+	if pos < 0 {
+		return 0
+	}
+	if pos > len(src) {
+		pos = len(src)
+	}
+	for pos < len(src) && src[pos] != '\n' {
+		pos++
+	}
+	if pos < len(src) {
+		return pos + 1
+	}
+	return pos
 }

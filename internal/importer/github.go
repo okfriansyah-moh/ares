@@ -253,9 +253,7 @@ func readGitHubMarkdownBody(root, rel string) (string, error) {
 		return "", err
 	}
 	body := stripMarkdownFrontmatter(string(data))
-	body = strings.TrimSpace(body)
-	body = stripSourceMarker(body)
-	body = strings.TrimSpace(body)
+	body = cleanImportedMarkdownBody(body)
 	if body == "" {
 		return "", nil
 	}
@@ -273,19 +271,6 @@ func stripMarkdownFrontmatter(s string) string {
 		return s
 	}
 	return strings.TrimPrefix(rest[idx:], "\n---\n")
-}
-
-func stripSourceMarker(s string) string {
-	t := strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
-	if strings.HasPrefix(t, "<!-- ars:source ") {
-		if i := strings.Index(t, "-->\n"); i >= 0 {
-			return t[i+4:]
-		}
-		if i := strings.Index(t, "-->"); i >= 0 {
-			return t[i+3:]
-		}
-	}
-	return s
 }
 
 func mergeRepository(dst, src *arslib.Repository) {
@@ -386,7 +371,7 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 		}
 
 		id := uniqueSlug(heading, used)
-		content := strings.TrimSpace(sec.Content)
+		content := cleanImportedMarkdownBody(sec.Content)
 		relBase := filepath.Join(".ai")
 
 		switch ClassifySection(heading) {

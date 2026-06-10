@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -14,6 +15,8 @@ import (
 
 // ErrUnknownSource is returned when the import source is not registered.
 var ErrUnknownSource = errors.New("importer: unknown source")
+
+var generatedCommentLineRe = regexp.MustCompile(`(?m)^\s*<!--\s*(?:ars:source|project:)[^>]*-->\s*\n?`)
 
 // Registry maps import source names to Importer implementations.
 type Registry struct {
@@ -174,6 +177,13 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	}
 
 	return created, conflicts, nil
+}
+
+func cleanImportedMarkdownBody(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = generatedCommentLineRe.ReplaceAllString(s, "")
+	return strings.TrimSpace(s)
 }
 
 func writeIfAllowed(root, rel string, data []byte, overwrite bool) (bool, error) {

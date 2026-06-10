@@ -83,6 +83,29 @@ func TestGitHubImporter_InstructionSections(t *testing.T) {
 	assert.Equal(t, "demo", repo.Manifest.Project.Name)
 }
 
+func TestGitHubImporter_PreservesReadableInstructionBoundaries(t *testing.T) {
+	root := t.TempDir()
+	writeCopilotFile(t, root, `# demo
+
+## Repository Instructions
+
+Design before code - brainstorming skill
+Vertical slice per module - .github/skills/vertical-slice/SKILL.md
+Commands and todo requirements: AGENTS.md Validation Requirement.
+Use rtk for verbose command output.
+`)
+
+	repo, err := (&GitHubImporter{}).Import(root)
+	require.NoError(t, err)
+	require.Len(t, repo.Instructions, 1)
+
+	content := repo.Instructions[0].Content
+	assert.Contains(t, content, "skill\nVertical slice")
+	assert.Contains(t, content, "Requirement.\nUse rtk")
+	assert.NotContains(t, content, "skillVertical")
+	assert.NotContains(t, content, "Requirement.Use")
+}
+
 func TestGitHubImporter_MissingFile(t *testing.T) {
 	root := t.TempDir()
 
