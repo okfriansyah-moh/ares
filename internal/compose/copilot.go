@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/markdown"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
@@ -66,7 +67,7 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 	seenInstructionNames := map[string]string{}
 	for _, inst := range instructions {
-		if !hasContentBody(inst.Content) {
+		if !content.HasBody(inst.Content) {
 			continue
 		}
 		name := normalizeCopilotName(inst.ID)
@@ -84,6 +85,7 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(skills, func(i, j int) bool {
 		return skills[i].ID < skills[j].ID
 	})
+	skills = filterContentfulSkills(skills)
 	skillByID := indexSkills(skills)
 	seenSkillNames := map[string]string{}
 	for _, skill := range skills {
@@ -126,6 +128,9 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 	seenPromptNames := map[string]string{}
 	for _, prompt := range prompts {
+		if !content.HasBody(prompt.Content) {
+			continue
+		}
 		name := normalizeCopilotName(prompt.ID)
 		if err := detectNormalizedCollision(seenPromptNames, name, prompt.ID, "copilot", "prompt"); err != nil {
 			return err
@@ -146,6 +151,9 @@ func (c *CopilotComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 	seenAgentNames := map[string]string{}
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		name := normalizeCopilotName(agent.ID)
 		if err := detectNormalizedCollision(seenAgentNames, name, agent.ID, "copilot", "agent"); err != nil {
 			return err
@@ -185,7 +193,7 @@ func buildCopilotOutput(repo *arslib.Repository, skillByID map[string]arslib.Ski
 
 	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
 	for _, inst := range instructions {
-		if hasContentBody(inst.Content) {
+		if content.HasBody(inst.Content) {
 			nonEmptyInstructions = append(nonEmptyInstructions, inst)
 		}
 	}
@@ -215,6 +223,9 @@ func buildCopilotOutput(repo *arslib.Repository, skillByID map[string]arslib.Ski
 	})
 
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		b.WriteString(copilotAgentSection(agent, skillByID))
 		b.WriteByte('\n')
 	}

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/markdown"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
@@ -45,6 +46,9 @@ func (c *ClaudeComposer) Compose(root string, repo *arslib.Repository) error {
 	skillNameByID := map[string]string{}
 	seenSkillDirs := map[string]string{}
 	for _, skill := range skills {
+		if !content.HasBody(skill.Content) {
+			continue
+		}
 		skillDir := normalizeClaudeSkillName(skill.ID)
 		if err := detectNormalizedCollision(seenSkillDirs, skillDir, skill.ID, "claude", "skill"); err != nil {
 			return err
@@ -103,7 +107,7 @@ func buildClaudeRootOutput(repo *arslib.Repository, skillNameByID map[string]str
 
 	nonEmptyInstructions := make([]arslib.Instruction, 0, len(instructions))
 	for _, inst := range instructions {
-		if hasContentBody(inst.Content) {
+		if content.HasBody(inst.Content) {
 			nonEmptyInstructions = append(nonEmptyInstructions, inst)
 		}
 	}
@@ -140,6 +144,9 @@ func buildClaudeRootOutput(repo *arslib.Repository, skillNameByID map[string]str
 	})
 
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		b.WriteString("## ")
 		b.WriteString(strings.ToLower(agent.ID))
 		b.WriteString("\n\n")

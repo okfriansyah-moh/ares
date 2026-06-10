@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	contentutil "github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/markdown"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
@@ -91,7 +92,7 @@ func ingestGitHubInstructions(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
-		if !hasContentBody(content) {
+		if !contentutil.HasBody(content) {
 			continue
 		}
 		upsertInstruction(repo, arslib.Instruction{
@@ -130,7 +131,7 @@ func ingestGitHubSkills(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
-		if !hasContentBody(content) {
+		if !contentutil.HasBody(content) {
 			continue
 		}
 		extras, err := collectGitHubSkillExtraFiles(root, id)
@@ -213,7 +214,7 @@ func ingestGitHubPrompts(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
-		if !hasContentBody(content) {
+		if !contentutil.HasBody(content) {
 			continue
 		}
 		upsertPrompt(repo, arslib.Prompt{
@@ -245,7 +246,7 @@ func ingestGitHubAgents(root string, repo *arslib.Repository) error {
 		if err != nil {
 			return fmt.Errorf("import github: %w", err)
 		}
-		if !hasContentBody(content) {
+		if !contentutil.HasBody(content) {
 			continue
 		}
 		upsertAgent(repo, arslib.Agent{
@@ -390,7 +391,7 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 		case classAgent:
 			content = mergeAgentSections(sections, i, content)
 			i = skipMergedSections(sections, i)
-			if !hasContentBody(content) {
+			if !contentutil.HasBody(content) {
 				continue
 			}
 			id := uniqueSlug(heading, used)
@@ -403,7 +404,7 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 		case classSkill:
 			content = mergeSkillSections(sections, i, content)
 			i = skipMergedSections(sections, i)
-			if !hasContentBody(content) {
+			if !contentutil.HasBody(content) {
 				continue
 			}
 			id := uniqueSlug(heading, used)
@@ -413,7 +414,7 @@ func sectionsToRepository(sections []markdown.Section, projectName string) *arsl
 				Content: content,
 			})
 		default:
-			if !hasContentBody(content) {
+			if !contentutil.HasBody(content) {
 				continue
 			}
 			id := uniqueSlug(heading, used)

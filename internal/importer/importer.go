@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/okfriansyah-moh/ares/internal/config"
+	"github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
 )
@@ -88,7 +89,7 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(instructions, func(i, j int) bool { return instructions[i].ID < instructions[j].ID })
 
 	for _, inst := range instructions {
-		if !hasContentBody(inst.Content) {
+		if !content.HasBody(inst.Content) {
 			continue
 		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "instructions", inst.ID+".md"))
@@ -107,7 +108,7 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(agents, func(i, j int) bool { return agents[i].ID < agents[j].ID })
 
 	for _, agent := range agents {
-		if !hasContentBody(agent.Content) {
+		if !content.HasBody(agent.Content) {
 			continue
 		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "agents", agent.ID, "AGENT.md"))
@@ -126,7 +127,7 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(skills, func(i, j int) bool { return skills[i].ID < skills[j].ID })
 
 	for _, skill := range skills {
-		if !hasContentBody(skill.Content) {
+		if !content.HasBody(skill.Content) {
 			continue
 		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "skills", skill.ID, "SKILL.md"))
@@ -160,7 +161,7 @@ func WriteRepository(root string, repo *arslib.Repository, overwrite bool) (crea
 	sort.Slice(prompts, func(i, j int) bool { return prompts[i].ID < prompts[j].ID })
 
 	for _, prompt := range prompts {
-		if !hasContentBody(prompt.Content) {
+		if !content.HasBody(prompt.Content) {
 			continue
 		}
 		rel := filepath.ToSlash(filepath.Join(".ai", "prompts", prompt.ID+".md"))
@@ -196,10 +197,6 @@ func cleanImportedMarkdownBody(s string) string {
 	s = strings.ReplaceAll(s, "\r", "\n")
 	s = generatedCommentLineRe.ReplaceAllString(s, "")
 	return strings.TrimSpace(s)
-}
-
-func hasContentBody(s string) bool {
-	return strings.TrimSpace(s) != ""
 }
 
 func writeIfAllowed(root, rel string, data []byte, overwrite bool) (bool, error) {

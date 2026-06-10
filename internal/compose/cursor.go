@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/okfriansyah-moh/ares/internal/content"
 	"github.com/okfriansyah-moh/ares/internal/markdown"
 	"github.com/okfriansyah-moh/ares/internal/safepath"
 	"github.com/okfriansyah-moh/ares/pkg/arslib"
@@ -44,7 +45,7 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		return fmt.Errorf("compose cursor: %w", err)
 	}
 
-	skillByID := indexSkills(repo.Skills)
+	skillByID := indexSkills(filterContentfulSkills(repo.Skills))
 	projectComment := fmt.Sprintf("<!-- project: %s -->\n", repo.Manifest.Project.Name)
 
 	instructions := append([]arslib.Instruction(nil), repo.Instructions...)
@@ -54,7 +55,7 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 
 	firstRule := true
 	for _, inst := range instructions {
-		if !hasContentBody(inst.Content) {
+		if !content.HasBody(inst.Content) {
 			continue
 		}
 		name := sanitizeRuleName(inst.ID)
@@ -77,6 +78,9 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		name := sanitizeRuleName(agent.ID)
 		body := sourceMarker(agent.Path) + buildCursorAgentRule(agent, skillByID)
 		if firstRule {
@@ -97,6 +101,9 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 	})
 
 	for _, prompt := range prompts {
+		if !content.HasBody(prompt.Content) {
+			continue
+		}
 		name := sanitizeRuleName(prompt.ID)
 		rel := filepath.ToSlash(filepath.Join(".cursor", "prompts", name+".prompt"))
 		content := prompt.Content
@@ -109,6 +116,7 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 	sort.Slice(skills, func(i, j int) bool {
 		return skills[i].ID < skills[j].ID
 	})
+	skills = filterContentfulSkills(skills)
 
 	for _, skill := range skills {
 		name := sanitizeRuleName(skill.ID)
@@ -136,6 +144,9 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 	}
 
 	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
 		name := sanitizeRuleName(agent.ID)
 		rel := filepath.ToSlash(filepath.Join(".cursor", "agents", name+".md"))
 		content := fmt.Sprintf("---\nname: %s\ndescription: %s\nmodel: inherit\n---\n\n%s",

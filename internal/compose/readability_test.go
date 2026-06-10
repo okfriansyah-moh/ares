@@ -46,7 +46,7 @@ func TestComposeTargetsPreserveReadableInstructionBoundaries(t *testing.T) {
 	}
 }
 
-func TestComposeTargetsSkipEmptyInstructions(t *testing.T) {
+func TestComposeTargetsSkipEmptyContentArtifacts(t *testing.T) {
 	repo := &arslib.Repository{
 		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
 		Instructions: []arslib.Instruction{
@@ -61,6 +61,28 @@ func TestComposeTargetsSkipEmptyInstructions(t *testing.T) {
 				Content: "Keep changes scoped.\n",
 			},
 		},
+		Agents: []arslib.Agent{
+			{
+				ID:        "empty-agent",
+				Path:      ".ai/agents/empty-agent/AGENT.md",
+				Content:   "\n",
+				SkillRefs: []string{"skills/empty-skill/SKILL.md"},
+			},
+		},
+		Skills: []arslib.Skill{
+			{
+				ID:      "empty-skill",
+				Path:    ".ai/skills/empty-skill/SKILL.md",
+				Content: "",
+			},
+		},
+		Prompts: []arslib.Prompt{
+			{
+				ID:      "empty-prompt",
+				Path:    ".ai/prompts/empty-prompt.md",
+				Content: " ",
+			},
+		},
 	}
 
 	for _, target := range []string{"cursor", "copilot", "claude", "codex"} {
@@ -73,20 +95,59 @@ func TestComposeTargetsSkipEmptyInstructions(t *testing.T) {
 				exists, err := safepath.Exists(root, ".cursor/rules/empty-rules.mdc")
 				require.NoError(t, err)
 				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".cursor/rules/empty-agent.mdc")
+				require.NoError(t, err)
+				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".cursor/agents/empty-agent.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".cursor/skills/empty-skill/SKILL.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".cursor/prompts/empty-prompt.prompt")
+				require.NoError(t, err)
+				assert.False(t, exists)
 			case "copilot":
 				exists, err := safepath.Exists(root, ".github/instructions/empty-rules.instructions.md")
 				require.NoError(t, err)
 				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".github/agents/empty-agent.agent.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".github/skills/empty-skill/SKILL.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".github/prompts/empty-prompt.prompt.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+
+				data, err := safepath.ReadFile(root, ".github/copilot-instructions.md")
+				require.NoError(t, err)
+				assert.NotContains(t, string(data), "empty-agent")
+				assert.NotContains(t, string(data), "empty-skill")
 			case "claude":
 				data, err := safepath.ReadFile(root, "CLAUDE.md")
 				require.NoError(t, err)
 				assert.NotContains(t, string(data), "empty-rules")
+				assert.NotContains(t, string(data), "empty-agent")
+				assert.NotContains(t, string(data), "empty-skill")
 				assert.Contains(t, string(data), "Keep changes scoped.")
+				exists, err := safepath.Exists(root, ".claude/skills/empty-skill/SKILL.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
 			case "codex":
 				data, err := safepath.ReadFile(root, "AGENTS.md")
 				require.NoError(t, err)
 				assert.NotContains(t, string(data), "empty-rules")
+				assert.NotContains(t, string(data), "empty-agent")
+				assert.NotContains(t, string(data), "empty-skill")
 				assert.Contains(t, string(data), "Keep changes scoped.")
+				exists, err := safepath.Exists(root, ".agents/skills/empty-skill/SKILL.md")
+				require.NoError(t, err)
+				assert.False(t, exists)
+				exists, err = safepath.Exists(root, ".codex/agents/empty-agent.toml")
+				require.NoError(t, err)
+				assert.False(t, exists)
 			}
 		})
 	}
