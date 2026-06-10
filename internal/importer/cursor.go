@@ -73,7 +73,7 @@ func parseCursorRule(data []byte) (ruleType string, body string) {
 	text := string(data)
 	parts := strings.SplitN(text, "---", 3)
 	if len(parts) < 3 || strings.TrimSpace(parts[0]) != "" {
-		return "", strings.TrimSpace(text)
+		return "", cleanImportedMarkdownBody(text)
 	}
 
 	meta := map[string]string{}
@@ -112,7 +112,7 @@ func parseCursorRule(data []byte) (ruleType string, body string) {
 		}
 	}
 
-	return ruleType, strings.TrimSpace(parts[2])
+	return ruleType, cleanImportedMarkdownBody(parts[2])
 }
 
 func emptyImportedRepository(projectName string) *arslib.Repository {

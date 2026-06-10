@@ -59,6 +59,33 @@ child body
 	assert.Contains(t, sections[1].Content, "child body")
 }
 
+func TestExtractSections_PreservesReadableBoundaries(t *testing.T) {
+	src := []byte(`## Repository Instructions
+Design before code - brainstorming skill
+Vertical slice per module - .github/skills/vertical-slice/SKILL.md
+
+- Modules export service interfaces only - no cross-module internal imports
+- No map[string]any across module boundaries - typed structs
+- backend/internal/platform/ = shared infra
+
+Commands and todo requirements: AGENTS.md Validation Requirement.
+Use rtk for verbose command output.
+`)
+
+	sections, err := ExtractSections(src)
+	require.NoError(t, err)
+	require.Len(t, sections, 1)
+
+	content := sections[0].Content
+	assert.Contains(t, content, "skill\nVertical slice")
+	assert.Contains(t, content, "imports\n- No map")
+	assert.Contains(t, content, "structs\n- backend/internal/platform")
+	assert.Contains(t, content, "Requirement.\nUse rtk")
+	assert.NotContains(t, content, "skillVertical")
+	assert.NotContains(t, content, "imports- No")
+	assert.NotContains(t, content, "Requirement.Use")
+}
+
 func TestExtractSections_Empty(t *testing.T) {
 	sections, err := ExtractSections(nil)
 	require.NoError(t, err)
