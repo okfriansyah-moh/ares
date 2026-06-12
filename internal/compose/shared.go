@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/okfriansyah-moh/ares/internal/content"
@@ -57,4 +58,35 @@ func filterContentfulSkills(skills []arslib.Skill) []arslib.Skill {
 		}
 	}
 	return out
+}
+
+func resolveSkill(ref string, skills map[string]arslib.Skill) (arslib.Skill, bool) {
+	for _, candidate := range skillRefCandidates(ref) {
+		if skill, ok := skills[candidate]; ok {
+			return skill, true
+		}
+	}
+	return arslib.Skill{}, false
+}
+
+func skillRefCandidates(ref string) []string {
+	ref = strings.TrimSpace(ref)
+	ref = strings.TrimLeft(ref, "-*")
+	ref = strings.TrimSpace(strings.Trim(ref, "\"'`"))
+	if ref == "" {
+		return nil
+	}
+
+	candidates := []string{ref}
+	slashed := filepath.ToSlash(ref)
+	if slashed != ref {
+		candidates = append(candidates, slashed)
+	}
+	if strings.Contains(slashed, "/") {
+		dir := filepath.Base(filepath.Dir(slashed))
+		if dir != "." && dir != "/" && dir != "" {
+			candidates = append(candidates, dir)
+		}
+	}
+	return candidates
 }

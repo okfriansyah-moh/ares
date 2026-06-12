@@ -51,45 +51,45 @@ The binary is distributed as a standalone executable (`go install`), a distroles
 
 **Key architectural decisions (non-negotiable):**
 
-| Decision | Rationale |
-|---|---|
-| Single static binary (`CGO_ENABLED=0`) | No runtime install; `go install` works out of the box; cross-platform |
-| File-based only (no DB, no network in v1) | ARES operates on the repository filesystem; no state synchronisation problem |
-| `Composer` and `Importer` interfaces | Open/Closed principle; add a provider without modifying caller code |
-| Narrow `safepath` package for all I/O | Centralises path-traversal and symlink guards; every package imports it |
-| `embed` stdlib for scaffold templates | Templates ship inside the binary; no external file deps at runtime |
+| Decision                                  | Rationale                                                                        |
+| ----------------------------------------- | -------------------------------------------------------------------------------- |
+| Single static binary (`CGO_ENABLED=0`)    | No runtime install; `go install` works out of the box; cross-platform            |
+| File-based only (no DB, no network in v1) | ARES operates on the repository filesystem; no state synchronisation problem     |
+| `Composer` and `Importer` interfaces      | Open/Closed principle; add a provider without modifying caller code              |
+| Narrow `safepath` package for all I/O     | Centralises path-traversal and symlink guards; every package imports it          |
+| `embed` stdlib for scaffold templates     | Templates ship inside the binary; no external file deps at runtime               |
 | Deterministic output (idempotent compose) | Same `.ai/` input always produces byte-identical output; safe for CI diff checks |
-| Distroless final image (`nonroot`) | Zero OS packages; no shell; eliminates the largest class of container CVEs |
+| Distroless final image (`nonroot`)        | Zero OS packages; no shell; eliminates the largest class of container CVEs       |
 
 ---
 
 ## 3. Tech Stack
 
-| Layer | Technology | Version | Rationale |
-|---|---|---|---|
-| Language | Go | 1.26 (latest stable) | Static binary; strong stdlib for file I/O and YAML; `go install` distribution |
-| CLI framework | `github.com/spf13/cobra` | latest | De-facto standard; subcommands, help generation, shell completion |
-| YAML parsing | `gopkg.in/yaml.v3` | latest | Strict struct mapping; supports depth limit for DoS prevention |
-| Markdown parsing | `github.com/yuin/goldmark` | latest | AST-level parse for section extraction during import and validate |
-| Embedded templates | `embed` (stdlib) | Go 1.16+ | `ars init` scaffold ships inside binary |
-| Testing assertion | `github.com/stretchr/testify` | latest | Table-driven tests; `assert` / `require` helpers |
-| Vulnerability scan | `govulncheck` | latest | Go-native vuln scanner against the Go vuln DB |
-| Static analysis | `staticcheck` | latest | Additional linting beyond `go vet` |
-| Container base | `gcr.io/distroless/static-debian12:nonroot` | latest | No shell; no package manager; runs as UID 65532 |
-| Container builder | `golang:1.26-alpine` | latest | Multi-stage build; discarded in final image |
-| CI | GitHub Actions | — | govulncheck + tests + container build on every PR |
-| Build automation | `make` | system | `build`, `test`, `lint`, `vuln`, `docker-build` targets |
+| Layer              | Technology                                  | Version              | Rationale                                                                     |
+| ------------------ | ------------------------------------------- | -------------------- | ----------------------------------------------------------------------------- |
+| Language           | Go                                          | 1.26 (latest stable) | Static binary; strong stdlib for file I/O and YAML; `go install` distribution |
+| CLI framework      | `github.com/spf13/cobra`                    | latest               | De-facto standard; subcommands, help generation, shell completion             |
+| YAML parsing       | `gopkg.in/yaml.v3`                          | latest               | Strict struct mapping; supports depth limit for DoS prevention                |
+| Markdown parsing   | `github.com/yuin/goldmark`                  | latest               | AST-level parse for section extraction during import and validate             |
+| Embedded templates | `embed` (stdlib)                            | Go 1.16+             | `ars init` scaffold ships inside binary                                       |
+| Testing assertion  | `github.com/stretchr/testify`               | latest               | Table-driven tests; `assert` / `require` helpers                              |
+| Vulnerability scan | `govulncheck`                               | latest               | Go-native vuln scanner against the Go vuln DB                                 |
+| Static analysis    | `staticcheck`                               | latest               | Additional linting beyond `go vet`                                            |
+| Container base     | `gcr.io/distroless/static-debian12:nonroot` | latest               | No shell; no package manager; runs as UID 65532                               |
+| Container builder  | `golang:1.26-alpine`                        | latest               | Multi-stage build; discarded in final image                                   |
+| CI                 | GitHub Actions                              | —                    | govulncheck + tests + container build on every PR                             |
+| Build automation   | `make`                                      | system               | `build`, `test`, `lint`, `vuln`, `docker-build` targets                       |
 
 **Not used (and why):**
 
-| Technology | Reason |
-|---|---|
-| PostgreSQL / any DB | No persistent state; all operations are file-based; no migrations needed |
-| SvelteKit / any frontend | CLI is the interface; no GUI in v1 |
-| Docker Compose | Single binary; no multi-service topology |
-| gRPC / HTTP server | No network communication in v1 |
-| Any ORM | No database |
-| CGO | Static compilation requires `CGO_ENABLED=0`; CGO disabled everywhere |
+| Technology               | Reason                                                                   |
+| ------------------------ | ------------------------------------------------------------------------ |
+| PostgreSQL / any DB      | No persistent state; all operations are file-based; no migrations needed |
+| SvelteKit / any frontend | CLI is the interface; no GUI in v1                                       |
+| Docker Compose           | Single binary; no multi-service topology                                 |
+| gRPC / HTTP server       | No network communication in v1                                           |
+| Any ORM                  | No database                                                              |
+| CGO                      | Static compilation requires `CGO_ENABLED=0`; CGO disabled everywhere     |
 
 ---
 
@@ -777,12 +777,12 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 **Security requirements covered by this task:**
 
-| Threat | Mitigation |
-|---|---|
-| Path traversal via malicious `.ai/` content | `safepath.Join` rejects escaping paths at every call site |
-| Symlink following (TOCTOU) | `os.Lstat` before every read; `ErrSymlink` on symlink targets |
-| Partial write corruption | Atomic temp-then-rename in `safepath.WriteFile` |
-| Directory traversal in agent IDs | `safepath.Join` called with agent ID as a path segment |
+| Threat                                      | Mitigation                                                    |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| Path traversal via malicious `.ai/` content | `safepath.Join` rejects escaping paths at every call site     |
+| Symlink following (TOCTOU)                  | `os.Lstat` before every read; `ErrSymlink` on symlink targets |
+| Partial write corruption                    | Atomic temp-then-rename in `safepath.WriteFile`               |
+| Directory traversal in agent IDs            | `safepath.Join` called with agent ID as a path segment        |
 
 **Coding standards:**
 
@@ -811,6 +811,7 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 **Files to create:**
 
 - `Dockerfile`
+
   ```dockerfile
   # Stage 1: Build
   FROM golang:1.26-alpine AS builder
@@ -851,14 +852,14 @@ Task 5 (Scaffold) Task 6 (Validator)  Task 7 (Compose Infra + Cursor)       │
 
 **Security requirements verified by this task:**
 
-| Requirement | Verification |
-|---|---|
-| No shell in final image | `docker run ars:dev sh` → `exec: "sh": executable file not found` |
-| No root process | `docker inspect ars:dev --format '{{.Config.User}}'` → `nonroot:nonroot` |
-| No OS package CVEs | Distroless has no OS packages; confirmed by `trivy image --list-all-pkgs` |
-| No Go dep CVEs | `govulncheck ./...` → zero findings in CI |
-| Static binary | `file bin/ars` → `statically linked` |
-| Stripped binary | `ls -lh bin/ars` < 8MB (debug info removed) |
+| Requirement             | Verification                                                              |
+| ----------------------- | ------------------------------------------------------------------------- |
+| No shell in final image | `docker run ars:dev sh` → `exec: "sh": executable file not found`         |
+| No root process         | `docker inspect ars:dev --format '{{.Config.User}}'` → `nonroot:nonroot`  |
+| No OS package CVEs      | Distroless has no OS packages; confirmed by `trivy image --list-all-pkgs` |
+| No Go dep CVEs          | `govulncheck ./...` → zero findings in CI                                 |
+| Static binary           | `file bin/ars` → `statically linked`                                      |
+| Stripped binary         | `ls -lh bin/ars` < 8MB (debug info removed)                               |
 
 **Coding standards:**
 
@@ -1016,8 +1017,8 @@ After installation the user sees:
   ### One-line installer (macOS + Linux — no Go required)
 
   curl -fsSL \
-    https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh \
-    | bash
+   https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh \
+   | bash
 
   Then add to PATH (zsh):
 
@@ -1049,13 +1050,13 @@ After installation the user sees:
 
 **Security requirements for the installer:**
 
-| Risk | Mitigation |
-|---|---|
-| MITM binary substitution | SHA-256 checksum downloaded from the same release (HTTPS only); verified before install |
-| Path traversal via `ARS_INSTALL_DIR` | `mkdir -p` + `mv` — no eval, no shell expansion of untrusted input |
-| Partial download corruption | Download to `mktemp`; `mv` only after checksum passes; `trap EXIT` cleans up temp |
-| Privilege escalation | Never writes to `/usr/local/bin` without explicit opt-in; defaults to `~/.local/bin` |
-| Script injection via `curl | bash` | `set -euo pipefail` — any error aborts immediately; no dynamic code generation |
+| Risk                                 | Mitigation                                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| MITM binary substitution             | SHA-256 checksum downloaded from the same release (HTTPS only); verified before install |
+| Path traversal via `ARS_INSTALL_DIR` | `mkdir -p` + `mv` — no eval, no shell expansion of untrusted input                      |
+| Partial download corruption          | Download to `mktemp`; `mv` only after checksum passes; `trap EXIT` cleans up temp       |
+| Privilege escalation                 | Never writes to `/usr/local/bin` without explicit opt-in; defaults to `~/.local/bin`    |
+| Script injection via `curl \| bash`  | `set -euo pipefail` — any error aborts immediately; no dynamic code generation          |
 
 **Validation:**
 
@@ -1074,26 +1075,91 @@ After installation the user sees:
 
 ---
 
+### Task 17 — Compose Determinism and Collision Hardening ✅
+
+**Goal:** Convert the latest maintainability review into concrete hardening work for compose determinism, collision safety, and policy consistency. Ensure skill resolution is deterministic, cursor name collisions fail fast, and codex AGENTS.md regeneration behavior is explicitly aligned with specification and tests.
+
+**Files to modify:**
+
+- `internal/compose/cursor.go`
+  - Replace fuzzy `resolveSkill` fallback (`strings.Contains`) with deterministic exact matching only.
+  - Introduce explicit normalized-name collision detection for cursor instructions, agents, prompts, and skills before writes.
+  - Keep error messaging consistent with existing `detectNormalizedCollision` style.
+
+- `internal/compose/codex.go`
+  - Enforce the AGENTS.md policy: create `AGENTS.md` only when missing, validate an existing root `AGENTS.md` path, and preserve existing content.
+  - Ensure implementation and tests match the selected policy.
+
+- `internal/compose/shared.go`
+  - Add shared deterministic skill-ref resolution helper if needed so all targets behave consistently.
+
+- `internal/compose/cursor_test.go`
+  - Add collision tests for instruction/agent/prompt/skill normalization collisions.
+  - Add deterministic skill-reference resolution tests for ambiguous refs.
+
+- `internal/compose/codex_test.go`
+  - Update/add tests to lock the selected AGENTS.md policy.
+
+- `internal/compose/claude_test.go`
+  - Add targeted test ensuring skill reference resolution is deterministic and not substring-based.
+
+- `SPEC.md`
+  - Clarify codex AGENTS.md overwrite/preserve behavior to remove ambiguity.
+  - Keep mapping design rules and behavior guarantees consistent with implementation.
+
+- `README.md`
+  - If policy changes are user-visible (especially AGENTS.md handling), document the behavior under compose notes.
+
+**Dependencies:**
+
+- Task 9 (Claude + Codex Composers)
+- Task 15 (SPEC.md and README maintenance)
+- Task 16 (latest completed task)
+
+**Risk Record:**
+
+| Risk                                                               | Likelihood | Impact | Affected tasks | Mitigation                                                                                                  | Trigger                                                                               |
+| ------------------------------------------------------------------ | ---------- | ------ | -------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Deterministic resolver change breaks existing fuzzy refs           | Medium     | High   | Task 17        | Add failing tests first; keep exact path and ID forms supported; report unresolved refs clearly             | Compose output drops previously inlined skills for ambiguous refs                     |
+| New cursor collision checks fail existing repos with colliding IDs | Medium     | Medium | Task 17        | Add explicit migration guidance in error text and README; keep collisions actionable with both IDs in error | `ars compose --target cursor` starts failing on previously "working" repos            |
+| Codex AGENTS policy change causes user surprise                    | Medium     | Medium | Task 17        | Align code, tests, SPEC, and README in one PR; include behavior note in changelog/release notes             | Existing manual `AGENTS.md` content is unexpectedly replaced or unexpectedly retained |
+
+**Validation:**
+
+- `go test -race -count=1 ./internal/compose/...` — all tests pass with new deterministic and collision checks
+- `go test -race -count=1 ./...` — no regressions in integration and CLI flows
+- `go run ./cmd/ars compose --target cursor --root <repo>` — deterministic outputs across repeated runs
+- `go run ./cmd/ars compose --target codex --root <repo>` — AGENTS.md behavior matches selected policy and docs
+- `go run ./cmd/ars validate --root <repo>` — still passes on generated artifacts and `.ai/`
+- `go vet ./...` — zero issues
+- `staticcheck ./...` — zero issues
+- `govulncheck ./...` — zero findings
+
+**Prompt context needed:** latest compose review findings + §8.3 (Provider Mapping) + §8.8 (compose algorithm) + §8.9 (import algorithm implications) + §8.11 (Definition of Done)
+
+---
+
 ## 6. Task Summary
 
-| Task | Name | Key Files | Depends On | Est. Complexity |
-|---|---|---|---|---|
-| 1 ✅ | Project Scaffold | `go.mod`, `Makefile`, `.gitignore`, `cmd/ars/main.go` stub | — | Low |
-| 2 ✅ | Domain Types | `pkg/arslib/types.go`, `interfaces.go`, `types_test.go` | Task 1 | Low |
-| 3 ✅ | Config Package | `internal/config/manifest.go`, `types.go`, `manifest_test.go` | Task 2 | Low |
-| 4 ✅ | Markdown Utility | `internal/markdown/markdown.go`, `markdown_test.go` | Task 1 | Medium |
-| 5 ✅ | Scaffold (`ars init`) | `internal/scaffold/scaffold.go`, `templates/`, `scaffold_test.go` | Tasks 2, 3 | Medium |
-| 6 ✅ | Validator (`ars validate`) | `internal/validator/*.go`, `validator_test.go` | Tasks 3, 4 | Medium |
-| 7 ✅ | Compose Infra + Cursor | `internal/compose/composer.go`, `cursor.go`, `cursor_test.go` | Tasks 2, 3, 4 | Medium |
-| 8 ✅ | Copilot Composer | `internal/compose/copilot.go`, `copilot_test.go` | Task 7 | Medium |
-| 9 ✅ | Claude + Codex Composers | `internal/compose/claude.go`, `codex.go`, `shared.go`, tests | Task 7 | Medium |
-| 10 ✅ | Importer Infra + GitHub | `internal/importer/importer.go`, `github.go`, `classify.go`, tests | Tasks 2, 3, 4 | High |
-| 11 ✅ | Cursor + Claude Importers | `internal/importer/cursor.go`, `claude.go`, tests | Task 10 | Medium |
-| 12 ✅ | CLI Wire-up | `cmd/ars/main.go`, `internal/version/version.go`, `main_test.go` | Tasks 5–11 | Medium |
-| 13 ✅ | Security Hardening | `internal/safepath/safepath.go`, `safepath_test.go`, retrofit all I/O | Task 12 | High |
-| 14 ✅ | Container + Release | `Dockerfile`, `.github/workflows/ci.yml`, Makefile additions | Task 13 | Low |
-| 15 ✅ | Integration Tests + Docs | `test/integration/roundtrip_test.go`, `SPEC.md`, `README.md` | Tasks 12–14 | Medium |
-| 16 ✅ | Installation Script + GitHub Release | `install.sh`, `.github/workflows/release.yml`, Makefile additions, `README.md` update | Task 15 | Medium |
+| Task  | Name                                        | Key Files                                                                                                                      | Depends On      | Est. Complexity |
+| ----- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------- | --------------- |
+| 1 ✅  | Project Scaffold                            | `go.mod`, `Makefile`, `.gitignore`, `cmd/ars/main.go` stub                                                                     | —               | Low             |
+| 2 ✅  | Domain Types                                | `pkg/arslib/types.go`, `interfaces.go`, `types_test.go`                                                                        | Task 1          | Low             |
+| 3 ✅  | Config Package                              | `internal/config/manifest.go`, `types.go`, `manifest_test.go`                                                                  | Task 2          | Low             |
+| 4 ✅  | Markdown Utility                            | `internal/markdown/markdown.go`, `markdown_test.go`                                                                            | Task 1          | Medium          |
+| 5 ✅  | Scaffold (`ars init`)                       | `internal/scaffold/scaffold.go`, `templates/`, `scaffold_test.go`                                                              | Tasks 2, 3      | Medium          |
+| 6 ✅  | Validator (`ars validate`)                  | `internal/validator/*.go`, `validator_test.go`                                                                                 | Tasks 3, 4      | Medium          |
+| 7 ✅  | Compose Infra + Cursor                      | `internal/compose/composer.go`, `cursor.go`, `cursor_test.go`                                                                  | Tasks 2, 3, 4   | Medium          |
+| 8 ✅  | Copilot Composer                            | `internal/compose/copilot.go`, `copilot_test.go`                                                                               | Task 7          | Medium          |
+| 9 ✅  | Claude + Codex Composers                    | `internal/compose/claude.go`, `codex.go`, `shared.go`, tests                                                                   | Task 7          | Medium          |
+| 10 ✅ | Importer Infra + GitHub                     | `internal/importer/importer.go`, `github.go`, `classify.go`, tests                                                             | Tasks 2, 3, 4   | High            |
+| 11 ✅ | Cursor + Claude Importers                   | `internal/importer/cursor.go`, `claude.go`, tests                                                                              | Task 10         | Medium          |
+| 12 ✅ | CLI Wire-up                                 | `cmd/ars/main.go`, `internal/version/version.go`, `main_test.go`                                                               | Tasks 5–11      | Medium          |
+| 13 ✅ | Security Hardening                          | `internal/safepath/safepath.go`, `safepath_test.go`, retrofit all I/O                                                          | Task 12         | High            |
+| 14 ✅ | Container + Release                         | `Dockerfile`, `.github/workflows/ci.yml`, Makefile additions                                                                   | Task 13         | Low             |
+| 15 ✅ | Integration Tests + Docs                    | `test/integration/roundtrip_test.go`, `SPEC.md`, `README.md`                                                                   | Tasks 12–14     | Medium          |
+| 16 ✅ | Installation Script + GitHub Release        | `install.sh`, `.github/workflows/release.yml`, Makefile additions, `README.md` update                                          | Task 15         | Medium          |
+| 17 ✅ | Compose Determinism and Collision Hardening | `internal/compose/cursor.go`, `internal/compose/codex.go`, `internal/compose/shared.go`, compose tests, `SPEC.md`, `README.md` | Tasks 9, 15, 16 | Medium          |
 
 ---
 
@@ -1163,23 +1229,23 @@ type Finding struct {
 **`manifest.yaml` — parsed into `arslib.Manifest`:**
 
 ```yaml
-version: "2.0"           # ARS spec version; bump on structural changes to .ai/
+version: "2.0" # ARS spec version; bump on structural changes to .ai/
 project:
-  name: string           # required; inferred from filepath.Base(root) by ars init
-  description: string    # optional one-line description
-  repository: string     # optional canonical repo URL
+  name: string # required; inferred from filepath.Base(root) by ars init
+  description: string # optional one-line description
+  repository: string # optional canonical repo URL
 defaults:
-  agent: string          # optional default agent ID for compose targets
+  agent: string # optional default agent ID for compose targets
 ```
 
 **`agents/<name>/AGENT.md` — required sections (checked by validator):**
 
-| Section | Level if missing | Purpose |
-|---|---|---|
-| `## Role` | Error | One sentence: what the agent owns |
-| `## Responsibilities` | Error | Bullet list of what it does |
-| `## Uses` | Error | Skill references (paths to SKILL.md) |
-| `## Boundaries` | Error | What it does NOT do |
+| Section               | Level if missing | Purpose                              |
+| --------------------- | ---------------- | ------------------------------------ |
+| `## Role`             | Error            | One sentence: what the agent owns    |
+| `## Responsibilities` | Error            | Bullet list of what it does          |
+| `## Uses`             | Error            | Skill references (paths to SKILL.md) |
+| `## Boundaries`       | Error            | What it does NOT do                  |
 
 **`skills/<name>/SKILL.md`** — free-form markdown; no required sections; may have `references/` subdirectory
 
@@ -1187,31 +1253,31 @@ defaults:
 
 **`prompts/<name>.md`** — recommended sections:
 
-| Section | Level if missing | Purpose |
-|---|---|---|
-| `## Use` | Warning | One sentence goal |
-| `## Inputs` | — | What to attach |
-| `## Instructions` | — | What to do |
-| `## Check` | — | Validation criteria |
+| Section           | Level if missing | Purpose             |
+| ----------------- | ---------------- | ------------------- |
+| `## Use`          | Warning          | One sentence goal   |
+| `## Inputs`       | —                | What to attach      |
+| `## Instructions` | —                | What to do          |
+| `## Check`        | —                | Validation criteria |
 
 ---
 
 ### 8.3 Provider Mapping
 
-| `.ai/` Source | `--target cursor` | `--target copilot` | `--target claude` | `--target codex` |
-|---|---|---|---|---|
-| `instructions/*.md` | `.cursor/rules/<name>.mdc` (type: always) | `.github/copilot-instructions.md` top section | `CLAUDE.md` top section | `AGENTS.md` top section |
-| `agents/<n>/AGENT.md` | `.cursor/rules/<n>.mdc` (type: agent-requested) | Role block in copilot instructions | `## {n}` section in `CLAUDE.md` | Agent entry in `AGENTS.md` |
-| `skills/<n>/SKILL.md` | Inlined into referencing agent rule | Inlined under relevant instructions | Inlined under agent context | Inlined under agent context |
-| `prompts/<n>.md` | `.cursor/prompts/<n>.prompt` | Not natively supported — skipped | Custom slash command stub | Not natively supported — skipped |
-| `manifest.yaml project.name` | Header comment in first rule | Header comment | `CLAUDE.md` H1 title | `AGENTS.md` H1 title |
+| `.ai/` Source                | `--target cursor`                               | `--target copilot`                            | `--target claude`               | `--target codex`                 |
+| ---------------------------- | ----------------------------------------------- | --------------------------------------------- | ------------------------------- | -------------------------------- |
+| `instructions/*.md`          | `.cursor/rules/<name>.mdc` (type: always)       | `.github/copilot-instructions.md` top section | `CLAUDE.md` top section         | `AGENTS.md` top section          |
+| `agents/<n>/AGENT.md`        | `.cursor/rules/<n>.mdc` (type: agent-requested) | Role block in copilot instructions            | `## {n}` section in `CLAUDE.md` | Agent entry in `AGENTS.md`       |
+| `skills/<n>/SKILL.md`        | Inlined into referencing agent rule             | Inlined under relevant instructions           | Inlined under agent context     | Inlined under agent context      |
+| `prompts/<n>.md`             | `.cursor/prompts/<n>.prompt`                    | Not natively supported — skipped              | Custom slash command stub       | Not natively supported — skipped |
+| `manifest.yaml project.name` | Header comment in first rule                    | Header comment                                | `CLAUDE.md` H1 title            | `AGENTS.md` H1 title             |
 
 **Mapping design rules (non-negotiable):**
 
 1. **Lossless intent.** Compose preserves the semantic intent of `.ai/` content; it does not silently truncate.
 2. **No orphaned output.** Every generated file traces to at least one `.ai/` source file.
 3. **Idempotent.** Running `ars compose` twice produces the same output (byte-identical).
-4. **Overwrite safe.** Compose always regenerates the full target; it never partially updates.
+4. **Overwrite safe.** Compose regenerates managed target artifacts; Codex preserves an existing root `AGENTS.md` and only creates it when missing.
 5. **Source marker.** Every generated file includes `<!-- ars:source .ai/ -->` (or equivalent) so `ars import` can detect ars-managed files.
 
 ---
@@ -1266,6 +1332,7 @@ ENTRYPOINT ["/ars"]
 ```
 
 **Build flags:**
+
 - `-trimpath`: removes local build paths from binary (reproducible builds)
 - `-ldflags="-s -w"`: strips symbol table and DWARF debug info; reduces binary size
 - `CGO_ENABLED=0`: fully static binary; no glibc dependency
@@ -1285,7 +1352,7 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version: "1.26" }
       - run: go test -race -count=1 -coverprofile=coverage.out ./...
-      - run: go tool cover -func=coverage.out   # informational
+      - run: go tool cover -func=coverage.out # informational
 
   lint:
     runs-on: ubuntu-latest
@@ -1304,7 +1371,7 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version: "1.26" }
       - run: go install golang.org/x/vuln/cmd/govulncheck@latest
-      - run: govulncheck ./...    # exit 1 on any finding
+      - run: govulncheck ./... # exit 1 on any finding
 
   docker:
     runs-on: ubuntu-latest
@@ -1319,25 +1386,26 @@ jobs:
 ### 8.7 Validation Rules
 
 **Exit codes:**
+
 - `0` — no Error-level findings (Warnings allowed)
 - `1` — at least one Error-level finding
 
 **Complete rule table:**
 
-| Rule | Level | Condition |
-|---|---|---|
-| `manifest.yaml` missing | Error | File does not exist at `.ai/manifest.yaml` |
-| `manifest.yaml` unparseable | Error | YAML parse failure |
-| `project.name` empty | Error | `manifest.project.name == ""` |
-| `version` unrecognised | Warning | Version string not in known set |
-| `defaults.agent` references unknown agent | Warning | Agent ID in defaults not found in `agents/` |
-| `agents/*/AGENT.md` missing `## Role` | Error | `markdown.HasSection` returns false |
-| `agents/*/AGENT.md` missing `## Responsibilities` | Error | Same |
-| `agents/*/AGENT.md` missing `## Uses` | Error | Same |
-| `agents/*/AGENT.md` missing `## Boundaries` | Error | Same |
-| Skill reference not found | Error | Path listed under `## Uses` resolves to non-existent file |
-| Skill reference escapes root | Error | `safepath.Join` returns `ErrPathEscape` |
-| `prompts/*.md` missing `## Use` | Warning | Optional but recommended |
+| Rule                                              | Level   | Condition                                                 |
+| ------------------------------------------------- | ------- | --------------------------------------------------------- |
+| `manifest.yaml` missing                           | Error   | File does not exist at `.ai/manifest.yaml`                |
+| `manifest.yaml` unparseable                       | Error   | YAML parse failure                                        |
+| `project.name` empty                              | Error   | `manifest.project.name == ""`                             |
+| `version` unrecognised                            | Warning | Version string not in known set                           |
+| `defaults.agent` references unknown agent         | Warning | Agent ID in defaults not found in `agents/`               |
+| `agents/*/AGENT.md` missing `## Role`             | Error   | `markdown.HasSection` returns false                       |
+| `agents/*/AGENT.md` missing `## Responsibilities` | Error   | Same                                                      |
+| `agents/*/AGENT.md` missing `## Uses`             | Error   | Same                                                      |
+| `agents/*/AGENT.md` missing `## Boundaries`       | Error   | Same                                                      |
+| Skill reference not found                         | Error   | Path listed under `## Uses` resolves to non-existent file |
+| Skill reference escapes root                      | Error   | `safepath.Join` returns `ErrPathEscape`                   |
+| `prompts/*.md` missing `## Use`                   | Warning | Optional but recommended                                  |
 
 ---
 
@@ -1414,16 +1482,16 @@ func ClassifySection(heading string) classification {
 
 **Applied per package:**
 
-| Principle | Application in ARES |
-|---|---|
-| **S**ingle Responsibility | `safepath` owns I/O safety only; `markdown` owns section extraction only; `config` owns manifest parsing only |
-| **O**pen/Closed | Add a new compose target → create one file implementing `arslib.Composer`; `composer.go` is never modified |
-| **L**iskov Substitution | All `Composer` and `Importer` implementations are interchangeable via their interface |
-| **I**nterface Segregation | Three narrow interfaces (`Composer`, `Importer`, `Validator`); no fat interfaces with unused methods |
-| **D**ependency Inversion | `cmd/ars/main.go` depends on `arslib.Composer` interface; never on `*CursorComposer` directly |
-| **D**on't Repeat Yourself | Section classification in one place (`classify.go`); shared builder function in `compose/shared.go`; `slugify` in `importer.go` |
-| **Y**ou Aren't Gonna Need It | No plugin system, no remote registry, no config file, no `ars run` runtime in v1 |
-| **K**eep It Simple, Stupid | Heuristic import uses two regexes; compose uses `strings.Builder`; no AST transformation of output |
+| Principle                    | Application in ARES                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **S**ingle Responsibility    | `safepath` owns I/O safety only; `markdown` owns section extraction only; `config` owns manifest parsing only                   |
+| **O**pen/Closed              | Add a new compose target → create one file implementing `arslib.Composer`; `composer.go` is never modified                      |
+| **L**iskov Substitution      | All `Composer` and `Importer` implementations are interchangeable via their interface                                           |
+| **I**nterface Segregation    | Three narrow interfaces (`Composer`, `Importer`, `Validator`); no fat interfaces with unused methods                            |
+| **D**ependency Inversion     | `cmd/ars/main.go` depends on `arslib.Composer` interface; never on `*CursorComposer` directly                                   |
+| **D**on't Repeat Yourself    | Section classification in one place (`classify.go`); shared builder function in `compose/shared.go`; `slugify` in `importer.go` |
+| **Y**ou Aren't Gonna Need It | No plugin system, no remote registry, no config file, no `ars run` runtime in v1                                                |
+| **K**eep It Simple, Stupid   | Heuristic import uses two regexes; compose uses `strings.Builder`; no AST transformation of output                              |
 
 ---
 
@@ -1431,16 +1499,16 @@ func ClassifySection(heading string) classification {
 
 All hot paths must meet these Big O targets:
 
-| Operation | Time | Space | Notes |
-|---|---|---|---|
-| `config.Load` | O(m) | O(m) | m = manifest file bytes; YAML depth capped at 8 |
-| `markdown.ExtractSections` | O(n) | O(k) | n = source bytes; k = section count |
-| `validator.Run` | O(f) sort O(r log r) | O(r) | f = total file count; r = finding count (sorted for determinism) |
-| `compose.Compose` | O(a × s + i) | O(output size) | a = agents; s = avg skills per agent; i = instruction bytes |
-| `importer.Import` | O(n) | O(section count) | n = source file bytes |
-| `importer.WriteRepository` | O(k) | O(1) per file | k = output file count; streaming writes |
-| `safepath.Join` | O(p) | O(p) | p = path string length; called per file operation |
-| File walk (compose/validate) | O(f) | O(f) | f = files in `.ai/`; results sorted for determinism |
+| Operation                    | Time                 | Space            | Notes                                                            |
+| ---------------------------- | -------------------- | ---------------- | ---------------------------------------------------------------- |
+| `config.Load`                | O(m)                 | O(m)             | m = manifest file bytes; YAML depth capped at 8                  |
+| `markdown.ExtractSections`   | O(n)                 | O(k)             | n = source bytes; k = section count                              |
+| `validator.Run`              | O(f) sort O(r log r) | O(r)             | f = total file count; r = finding count (sorted for determinism) |
+| `compose.Compose`            | O(a × s + i)         | O(output size)   | a = agents; s = avg skills per agent; i = instruction bytes      |
+| `importer.Import`            | O(n)                 | O(section count) | n = source file bytes                                            |
+| `importer.WriteRepository`   | O(k)                 | O(1) per file    | k = output file count; streaming writes                          |
+| `safepath.Join`              | O(p)                 | O(p)             | p = path string length; called per file operation                |
+| File walk (compose/validate) | O(f)                 | O(f)             | f = files in `.ai/`; results sorted for determinism              |
 
 **Sorting for determinism:** Any file walk result must be sorted before processing. `sort.Strings` is O(f log f) where f = file count; this is acceptable because f < 1000 in any realistic `.ai/` directory.
 
@@ -1573,7 +1641,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: write
@@ -1680,22 +1748,22 @@ make release-tag VERSION=v1.0.0
 
 #### Asset naming convention
 
-| Platform | Asset filename | Checksum |
-|---|---|---|
-| Linux x86-64 | `ars-linux-amd64` | `ars-linux-amd64.sha256` |
-| Linux ARM64 | `ars-linux-arm64` | `ars-linux-arm64.sha256` |
-| macOS Intel | `ars-darwin-amd64` | `ars-darwin-amd64.sha256` |
-| macOS Apple Silicon | `ars-darwin-arm64` | `ars-darwin-arm64.sha256` |
-| Windows x86-64 | `ars-windows-amd64.exe` | `ars-windows-amd64.exe.sha256` |
+| Platform            | Asset filename          | Checksum                       |
+| ------------------- | ----------------------- | ------------------------------ |
+| Linux x86-64        | `ars-linux-amd64`       | `ars-linux-amd64.sha256`       |
+| Linux ARM64         | `ars-linux-arm64`       | `ars-linux-arm64.sha256`       |
+| macOS Intel         | `ars-darwin-amd64`      | `ars-darwin-amd64.sha256`      |
+| macOS Apple Silicon | `ars-darwin-arm64`      | `ars-darwin-arm64.sha256`      |
+| Windows x86-64      | `ars-windows-amd64.exe` | `ars-windows-amd64.exe.sha256` |
 
 #### User experience by method
 
-| Method | Requires | Command |
-|---|---|---|
-| One-line install (recommended) | `curl`, `bash` | `curl -fsSL https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh \| bash` |
-| Go install | Go 1.26+ | `go install github.com/okfriansyah-moh/ares/cmd/ars@latest` |
-| Docker | Docker | `docker run --rm -v "$(pwd):/repo" ghcr.io/okfriansyah-moh/ares:latest compose --target cursor --root /repo` |
-| Manual download | `curl`/browser | `https://github.com/okfriansyah-moh/ares/releases/latest` |
+| Method                         | Requires       | Command                                                                                                      |
+| ------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| One-line install (recommended) | `curl`, `bash` | `curl -fsSL https://raw.githubusercontent.com/okfriansyah-moh/ares/main/install.sh \| bash`                  |
+| Go install                     | Go 1.26+       | `go install github.com/okfriansyah-moh/ares/cmd/ars@latest`                                                  |
+| Docker                         | Docker         | `docker run --rm -v "$(pwd):/repo" ghcr.io/okfriansyah-moh/ares:latest compose --target cursor --root /repo` |
+| Manual download                | `curl`/browser | `https://github.com/okfriansyah-moh/ares/releases/latest`                                                    |
 
 ---
 

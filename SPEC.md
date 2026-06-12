@@ -146,7 +146,8 @@ Mapping requirements:
 - Preserve semantic intent.
 - Produce deterministic output.
 - Include a source marker in generated files.
-- Regenerate complete target artifacts rather than partially updating them.
+- Regenerate complete managed target artifacts rather than partially updating them.
+- `ars compose --target codex` creates `AGENTS.md` only when it is missing; an existing root `AGENTS.md` is path-validated and preserved.
 - Keep generated artifacts traceable to `.ai/`.
 
 ## 5. Versioning

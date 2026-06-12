@@ -103,7 +103,7 @@ func TestCodexComposer_SkillExtraFiles(t *testing.T) {
 	assert.Equal(t, "# Reference\nDetailed content.\n", string(data))
 }
 
-func TestCodexComposer_SkipsExistingAGENTSMD(t *testing.T) {
+func TestCodexComposer_PreservesExistingAGENTSMD(t *testing.T) {
 	root := t.TempDir()
 
 	existing := "# Custom AGENTS.md\nDo not overwrite this.\n"
@@ -119,6 +119,10 @@ func TestCodexComposer_SkipsExistingAGENTSMD(t *testing.T) {
 	data, err := safepath.ReadFile(root, "AGENTS.md")
 	require.NoError(t, err)
 	assert.Equal(t, existing, string(data))
+
+	configData, err := safepath.ReadFile(root, ".codex/config.toml")
+	require.NoError(t, err)
+	assert.Contains(t, string(configData), "[agents]")
 }
 
 func TestCodexComposer_Idempotent(t *testing.T) {

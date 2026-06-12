@@ -211,6 +211,8 @@ ars compose --target cursor
 | `ars compose --target <target> [--root <path>]`     | Generate provider artifacts from `.ai/`.  |
 | `ars import <source> [--root <path>] [--overwrite]` | Import provider artifacts into `.ai/`.    |
 
+`ars compose --target codex` creates `AGENTS.md` only when it is missing. If `AGENTS.md` already exists at the repository root, ARES validates the path and preserves the file.
+
 ## Provider Support
 
 | Provider       | Compose target | Output                               |
