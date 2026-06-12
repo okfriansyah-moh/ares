@@ -87,6 +87,29 @@ func TestClaudeComposer_Idempotent(t *testing.T) {
 	assert.Equal(t, first, second)
 }
 
+func TestClaudeComposer_DoesNotResolveSkillBySubstring(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Agents: []arslib.Agent{{
+			ID:        "reviewer",
+			Content:   "Reviews work.",
+			SkillRefs: []string{"Use task-review when relevant"},
+		}},
+		Skills: []arslib.Skill{{
+			ID:      "task-review",
+			Path:    ".ai/skills/task-review/SKILL.md",
+			Content: "# Task Review\n\n## Purpose\nReview task output.\n",
+		}},
+	}
+
+	require.NoError(t, (&ClaudeComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, "CLAUDE.md")
+	require.NoError(t, err)
+	assert.Equal(t, 1, strings.Count(string(data), ".claude/skills/task-review/SKILL.md"))
+}
+
 func TestClaudeComposer_PathTraversal(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{

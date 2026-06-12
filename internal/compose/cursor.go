@@ -29,6 +29,31 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		return fmt.Errorf("compose cursor: repository is nil")
 	}
 
+	instructions := append([]arslib.Instruction(nil), repo.Instructions...)
+	sort.Slice(instructions, func(i, j int) bool {
+		return instructions[i].ID < instructions[j].ID
+	})
+
+	agents := append([]arslib.Agent(nil), repo.Agents...)
+	sort.Slice(agents, func(i, j int) bool {
+		return agents[i].ID < agents[j].ID
+	})
+
+	prompts := append([]arslib.Prompt(nil), repo.Prompts...)
+	sort.Slice(prompts, func(i, j int) bool {
+		return prompts[i].ID < prompts[j].ID
+	})
+
+	skills := append([]arslib.Skill(nil), repo.Skills...)
+	sort.Slice(skills, func(i, j int) bool {
+		return skills[i].ID < skills[j].ID
+	})
+	skills = filterContentfulSkills(skills)
+
+	if err := validateCursorCollisions(instructions, agents, prompts, skills); err != nil {
+		return err
+	}
+
 	if err := resetDir(root, ".cursor"); err != nil {
 		return fmt.Errorf("compose cursor: %w", err)
 	}
@@ -45,13 +70,8 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		return fmt.Errorf("compose cursor: %w", err)
 	}
 
-	skillByID := indexSkills(filterContentfulSkills(repo.Skills))
+	skillByID := indexSkills(skills)
 	projectComment := fmt.Sprintf("<!-- project: %s -->\n", repo.Manifest.Project.Name)
-
-	instructions := append([]arslib.Instruction(nil), repo.Instructions...)
-	sort.Slice(instructions, func(i, j int) bool {
-		return instructions[i].ID < instructions[j].ID
-	})
 
 	firstRule := true
 	for _, inst := range instructions {
@@ -72,11 +92,6 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		}
 	}
 
-	agents := append([]arslib.Agent(nil), repo.Agents...)
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].ID < agents[j].ID
-	})
-
 	for _, agent := range agents {
 		if !content.HasBody(agent.Content) {
 			continue
@@ -95,11 +110,6 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		}
 	}
 
-	prompts := append([]arslib.Prompt(nil), repo.Prompts...)
-	sort.Slice(prompts, func(i, j int) bool {
-		return prompts[i].ID < prompts[j].ID
-	})
-
 	for _, prompt := range prompts {
 		if !content.HasBody(prompt.Content) {
 			continue
@@ -111,12 +121,6 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 			return fmt.Errorf("compose cursor: %w", err)
 		}
 	}
-
-	skills := append([]arslib.Skill(nil), repo.Skills...)
-	sort.Slice(skills, func(i, j int) bool {
-		return skills[i].ID < skills[j].ID
-	})
-	skills = filterContentfulSkills(skills)
 
 	for _, skill := range skills {
 		name := sanitizeRuleName(skill.ID)
@@ -159,6 +163,61 @@ func (c *CursorComposer) Compose(root string, repo *arslib.Repository) error {
 		}
 	}
 
+	return nil
+}
+
+func validateCursorCollisions(instructions []arslib.Instruction, agents []arslib.Agent, prompts []arslib.Prompt, skills []arslib.Skill) error {
+	seenRuleNames := map[string]cursorRuleCollision{}
+	for _, inst := range instructions {
+		if !content.HasBody(inst.Content) {
+			continue
+		}
+		name := sanitizeRuleName(inst.ID)
+		if err := detectCursorRuleCollision(seenRuleNames, name, inst.ID, "instruction"); err != nil {
+			return err
+		}
+	}
+	for _, agent := range agents {
+		if !content.HasBody(agent.Content) {
+			continue
+		}
+		name := sanitizeRuleName(agent.ID)
+		if err := detectCursorRuleCollision(seenRuleNames, name, agent.ID, "agent"); err != nil {
+			return err
+		}
+	}
+
+	seenPromptNames := map[string]string{}
+	for _, prompt := range prompts {
+		if !content.HasBody(prompt.Content) {
+			continue
+		}
+		name := sanitizeRuleName(prompt.ID)
+		if err := detectNormalizedCollision(seenPromptNames, name, prompt.ID, "cursor", "prompt"); err != nil {
+			return err
+		}
+	}
+
+	seenSkillNames := map[string]string{}
+	for _, skill := range skills {
+		name := sanitizeRuleName(skill.ID)
+		if err := detectNormalizedCollision(seenSkillNames, name, skill.ID, "cursor", "skill"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type cursorRuleCollision struct {
+	kind string
+	id   string
+}
+
+func detectCursorRuleCollision(seen map[string]cursorRuleCollision, normalized, original, kind string) error {
+	if prev, ok := seen[normalized]; ok && (prev.kind != kind || prev.id != original) {
+		return fmt.Errorf("compose cursor: %s id %q normalizes to %q which collides with %s id %q", kind, original, normalized, prev.kind, prev.id)
+	}
+	seen[normalized] = cursorRuleCollision{kind: kind, id: original}
 	return nil
 }
 
@@ -246,24 +305,6 @@ func indexSkills(skills []arslib.Skill) map[string]arslib.Skill {
 		out[skill.ID] = skill
 	}
 	return out
-}
-
-func resolveSkill(ref string, skills map[string]arslib.Skill) (arslib.Skill, bool) {
-	ref = strings.TrimSpace(ref)
-	ref = strings.Trim(ref, "\"'`")
-	ref = strings.TrimPrefix(ref, "- ")
-	if skill, ok := skills[ref]; ok {
-		return skill, true
-	}
-	if skill, ok := skills[filepath.Base(filepath.Dir(ref))]; ok {
-		return skill, true
-	}
-	for id, skill := range skills {
-		if strings.Contains(ref, id) {
-			return skill, true
-		}
-	}
-	return arslib.Skill{}, false
 }
 
 func sanitizeRuleName(name string) string {

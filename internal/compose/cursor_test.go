@@ -102,6 +102,66 @@ func TestCursorComposer_SkillInlined(t *testing.T) {
 	assert.Contains(t, string(subagentData), "Prefer read-first workflow")
 }
 
+func TestCursorComposer_DoesNotResolveSkillBySubstring(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Agents: []arslib.Agent{{
+			ID:        "reviewer",
+			Path:      ".ai/agents/reviewer/AGENT.md",
+			Content:   "## Role\nReviews work.\n",
+			SkillRefs: []string{"Use task-review when relevant"},
+		}},
+		Skills: []arslib.Skill{{
+			ID:      "task-review",
+			Path:    ".ai/skills/task-review/SKILL.md",
+			Content: "## Purpose\nReview task output.\n",
+		}},
+	}
+
+	require.NoError(t, (&CursorComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, ".cursor/rules/reviewer.mdc")
+	require.NoError(t, err)
+	body := string(data)
+	assert.NotContains(t, body, "### Context: task-review")
+	assert.NotContains(t, body, "Review task output.")
+}
+
+func TestCursorComposer_ResolvesExactAmbiguousSkillPath(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Agents: []arslib.Agent{{
+			ID:        "reviewer",
+			Path:      ".ai/agents/reviewer/AGENT.md",
+			Content:   "## Role\nReviews work.\n",
+			SkillRefs: []string{".ai/skills/task-review/SKILL.md"},
+		}},
+		Skills: []arslib.Skill{
+			{
+				ID:      "review",
+				Path:    ".ai/skills/review/SKILL.md",
+				Content: "Review body.\n",
+			},
+			{
+				ID:      "task-review",
+				Path:    ".ai/skills/task-review/SKILL.md",
+				Content: "Task review body.\n",
+			},
+		},
+	}
+
+	require.NoError(t, (&CursorComposer{}).Compose(root, repo))
+
+	data, err := safepath.ReadFile(root, ".cursor/rules/reviewer.mdc")
+	require.NoError(t, err)
+	body := string(data)
+	assert.Contains(t, body, "### Context: task-review")
+	assert.Contains(t, body, "Task review body.")
+	assert.NotContains(t, body, "### Context: review")
+}
+
 func TestCursorComposer_NoPrompts(t *testing.T) {
 	root := t.TempDir()
 	repo := &arslib.Repository{
@@ -204,6 +264,110 @@ func TestCursorComposer_PathTraversal(t *testing.T) {
 	exists, err := safepath.Exists(root, "evil.mdc")
 	require.NoError(t, err)
 	assert.False(t, exists)
+}
+
+func TestCursorComposer_FailsOnInstructionAgentRuleCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Instructions: []arslib.Instruction{{
+			ID:      "planner",
+			Content: "instruction",
+		}},
+		Agents: []arslib.Agent{{
+			ID:      "nested/planner",
+			Content: "agent",
+		}},
+	}
+
+	err := (&CursorComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose cursor: agent id")
+	assert.Contains(t, err.Error(), "normalizes to \"planner\"")
+}
+
+func TestCursorComposer_FailsOnSameIDInstructionAgentRuleCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Instructions: []arslib.Instruction{{
+			ID:      "planner",
+			Content: "instruction",
+		}},
+		Agents: []arslib.Agent{{
+			ID:      "planner",
+			Content: "agent",
+		}},
+	}
+
+	err := (&CursorComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose cursor: agent id")
+	assert.Contains(t, err.Error(), "collides with instruction id \"planner\"")
+}
+
+func TestCursorComposer_FailsOnInstructionNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Instructions: []arslib.Instruction{
+			{ID: "repo-rules", Content: "first"},
+			{ID: "nested/repo-rules", Content: "second"},
+		},
+	}
+
+	err := (&CursorComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose cursor: instruction id")
+	assert.Contains(t, err.Error(), "normalizes to \"repo-rules\"")
+}
+
+func TestCursorComposer_FailsOnAgentNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Agents: []arslib.Agent{
+			{ID: "planner", Content: "first"},
+			{ID: "nested/planner", Content: "second"},
+		},
+	}
+
+	err := (&CursorComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose cursor: agent id")
+	assert.Contains(t, err.Error(), "normalizes to \"planner\"")
+}
+
+func TestCursorComposer_FailsOnPromptNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Prompts: []arslib.Prompt{
+			{ID: "create-plan", Content: "first"},
+			{ID: "nested/create-plan", Content: "second"},
+		},
+	}
+
+	err := (&CursorComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose cursor: prompt id")
+	assert.Contains(t, err.Error(), "normalizes to \"create-plan\"")
+}
+
+func TestCursorComposer_FailsOnSkillNameCollision(t *testing.T) {
+	root := t.TempDir()
+	repo := &arslib.Repository{
+		Manifest: arslib.Manifest{Project: arslib.Project{Name: "demo"}},
+		Skills: []arslib.Skill{
+			{ID: "task-review", Content: "first"},
+			{ID: "nested/task-review", Content: "second"},
+		},
+	}
+
+	err := (&CursorComposer{}).Compose(root, repo)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "compose cursor: skill id")
+	assert.Contains(t, err.Error(), "normalizes to \"task-review\"")
 }
 
 func TestCompose_UnknownTarget(t *testing.T) {
