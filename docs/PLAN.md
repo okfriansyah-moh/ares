@@ -1051,12 +1051,12 @@ After installation the user sees:
 **Security requirements for the installer:**
 
 | Risk                                 | Mitigation                                                                              |
-| ------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
 | MITM binary substitution             | SHA-256 checksum downloaded from the same release (HTTPS only); verified before install |
 | Path traversal via `ARS_INSTALL_DIR` | `mkdir -p` + `mv` — no eval, no shell expansion of untrusted input                      |
 | Partial download corruption          | Download to `mktemp`; `mv` only after checksum passes; `trap EXIT` cleans up temp       |
 | Privilege escalation                 | Never writes to `/usr/local/bin` without explicit opt-in; defaults to `~/.local/bin`    |
-| Script injection via `curl           | bash`                                                                                   | `set -euo pipefail` — any error aborts immediately; no dynamic code generation |
+| Script injection via `curl \| bash`  | `set -euo pipefail` — any error aborts immediately; no dynamic code generation          |
 
 **Validation:**
 
